@@ -10,28 +10,32 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "guest")
-public class Guest {
+@Table(name = "users")
+public class User {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "guest_id", unique = true, nullable = false)
-    private String guestId;
+    @Column(unique = true, nullable = false)
+    private String username;
+    
+    @Column(nullable = false)
+    private String password;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
     // Default constructor
-    public Guest() {
+    public User() {
         this.createdAt = LocalDateTime.now();
     }
     
-    // Constructor with guestId
-    public Guest(String guestId) {
-        this.guestId = guestId;
-        this.createdAt = LocalDateTime.now();
+    // Constructor with username and password
+    public User(String username, String password) {
+        this();
+        this.username = username;
+        this.password = password;
     }
     
     // Getters and Setters
@@ -43,12 +47,20 @@ public class Guest {
         this.id = id;
     }
     
-    public String getGuestId() {
-        return guestId;
+    public String getUsername() {
+        return username;
     }
     
-    public void setGuestId(String guestId) {
-        this.guestId = guestId;
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    
+    public String getPassword() {
+        return password;
+    }
+    
+    public void setPassword(String password) {
+        this.password = password;
     }
     
     public LocalDateTime getCreatedAt() {

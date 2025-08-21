@@ -9,7 +9,6 @@
     overflow: hidden;
 }
 
-/* Header */
 header {
     background: white;
     padding: 15px 20px;
@@ -29,10 +28,31 @@ header {
     gap: 8px;
 }
 
-.header-left h1 {
+.app-header-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-app-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.app-title-section h1 {
     margin: 0;
     color: #333;
     font-size: 1.5rem;
+}
+
+.app-name {
+    margin: 5px 0;
+    font-size: 1.1rem;
+    color: #666;
+    font-weight: 500;
 }
 
 .current-screen-info {
@@ -60,7 +80,7 @@ header {
     gap: 10px;
 }
 
-/* Component Toolbox */
+/* Component box */
 .toolbox {
     background: white;
     border-radius: 10px;
@@ -292,7 +312,6 @@ header {
 .screen-name {
     font-weight: 500;
     color: #333;
-    flex: 1;
 }
 
 .screen-actions {

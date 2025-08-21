@@ -2,12 +2,13 @@ package com.dragdrop;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 
-@SpringBootApplication
-public class MobileScreenDesignerApplication extends SpringBootServletInitializer {
+@SpringBootApplication(exclude = {SecurityAutoConfiguration.class})
+public class MobileScreenDesignerApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(MobileScreenDesignerApplication.class, args);
     }
+
 }

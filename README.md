@@ -9,10 +9,17 @@
    ```sql
    CREATE DATABASE mobile_designer_db;
    ```
-3. Run the database schema:
+3. Run the complete database schema (includes a new users table as I've added auth):
    ```bash
    psql -U postgres -d mobile_designer_db -f database_schema.sql
    ```
+
+## Authentication
+
+### Default Test Account
+You can use these credntials to login:
+**Username**: `admin`
+**Password**: `admin123`
 
 
 # 2. Application Configuration

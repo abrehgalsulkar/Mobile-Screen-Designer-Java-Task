@@ -29,8 +29,8 @@ public class Application {
     @Column(name = "icon_path")
     private String iconPath;
     
-    @Column(name = "guest_id", nullable = false)
-    private String guestId;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -45,9 +45,9 @@ public class Application {
     }
     
     // Constructor with required fields
-    public Application(String name, String guestId) {
+    public Application(String name, Long userId) {
         this.name = name;
-        this.guestId = guestId;
+        this.userId = userId;
         this.createdAt = LocalDateTime.now();
     }
     
@@ -76,12 +76,12 @@ public class Application {
         this.iconPath = iconPath;
     }
     
-    public String getGuestId() {
-        return guestId;
+    public Long getUserId() {
+        return userId;
     }
     
-    public void setGuestId(String guestId) {
-        this.guestId = guestId;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
     
     public LocalDateTime getCreatedAt() {

@@ -15,15 +15,25 @@
             <header>
                 <div class="header-content">
                     <div class="header-left">
-                        <h1>Mobile Screen Designer</h1>
-                        <div class="current-screen-info">
-                            <span class="label">Current Screen:</span>
-                            <span id="currentScreenName" class="screen-name">New Screen</span>
+                        <div class="app-header-info">
+                            <c:if test="${not empty application.iconPath}">
+                                <img src="${application.iconPath}" alt="${application.name}" class="header-app-icon">
+                            </c:if>
+                            <div class="app-title-section">
+                                <h1>Mobile Screen Designer</h1>
+                                <p class="app-name">${application.name}</p>
+                                <div class="current-screen-info">
+                                    <span class="label">Current Screen:</span>
+                                    <span id="currentScreenName" class="screen-name">New Screen</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="header-actions">
+                        <span class="user-info">Welcome, ${sessionScope.username}!</span>
                         <button id="saveScreenBtn" class="btn btn-primary">Save Screen</button>
                         <a href="/" class="btn btn-secondary">Back to Home</a>
+                        <a href="/logout" class="btn btn-secondary">Logout</a>
                     </div>
                 </div>
             </header>

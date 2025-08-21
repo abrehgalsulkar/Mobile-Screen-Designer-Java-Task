@@ -9,10 +9,10 @@ import com.dragdrop.model.Application;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
-    
-    List<Application> findByGuestId(String guestId);
-    
-    List<Application> findByGuestIdOrderByCreatedAtDesc(String guestId);
-    
-    boolean existsByNameAndGuestId(String name, String guestId);
+
+    List<Application> findByUserId(Long userId);
+
+    List<Application> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    boolean existsByNameAndUserId(String name, Long userId);
 }

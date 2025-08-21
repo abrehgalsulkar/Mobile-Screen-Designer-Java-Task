@@ -46,7 +46,7 @@ public class ApplicationController {
     @GetMapping
     public ResponseEntity<List<Application>> getAllApplications() {
         try {
-            List<Application> applications = applicationService.getAllApplicationsByGuest();
+            List<Application> applications = applicationService.getAllApplicationsByUser();
             return ResponseEntity.ok(applications);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

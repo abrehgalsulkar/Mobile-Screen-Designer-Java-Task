@@ -18,7 +18,7 @@ public class ScreenService {
     private ApplicationService applicationService;
     
     public Screen createScreen(Long applicationId, String name, String layoutJson, String screenImagePath) {
-        // Verify application exists
+        // Get application ID TO CHECK IF IT EXISTS
         applicationService.getApplicationById(applicationId);
         
         if (screenRepository.existsByNameAndApplicationId(name, applicationId)) {
@@ -32,7 +32,6 @@ public class ScreenService {
     }
     
     public List<Screen> getAllScreensByApplication(Long applicationId) {
-        // Verify application exists
         applicationService.getApplicationById(applicationId);
         
         return screenRepository.findByApplicationIdOrderByCreatedAtDesc(applicationId);

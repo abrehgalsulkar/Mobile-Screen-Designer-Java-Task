@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dragdrop.model.Application;
-import com.dragdrop.model.Guest;
 import com.dragdrop.repository.ApplicationRepository;
 
 @Service
@@ -15,25 +14,21 @@ public class ApplicationService {
     @Autowired
     private ApplicationRepository applicationRepository;
     
-    @Autowired
-    private GuestService guestService;
-    
     public Application createApplication(String name, String iconPath) {
-        Guest guest = guestService.getOrCreateDefaultGuest();
+        Long userId = 1L;
         
-        if (applicationRepository.existsByNameAndGuestId(name, guest.getGuestId())) {
+        if (applicationRepository.existsByNameAndUserId(name, userId)) {
             throw new RuntimeException("Application with name '" + name + "' already exists");
         }
         
-        Application application = new Application(name, guest.getGuestId());
+        Application application = new Application(name, userId);
         application.setIconPath(iconPath);
         
         return applicationRepository.save(application);
     }
     
-    public List<Application> getAllApplicationsByGuest() {
-        Guest guest = guestService.getOrCreateDefaultGuest();
-        return applicationRepository.findByGuestIdOrderByCreatedAtDesc(guest.getGuestId());
+    public List<Application> getAllApplicationsByUser() {
+        return applicationRepository.findAll();
     }
     
     public Application getApplicationById(Long id) {
@@ -45,7 +40,7 @@ public class ApplicationService {
         Application application = getApplicationById(id);
         
         if (!application.getName().equals(name) && 
-            applicationRepository.existsByNameAndGuestId(name, application.getGuestId())) {
+            applicationRepository.existsByNameAndUserId(name, application.getUserId())) {
             throw new RuntimeException("Application with name '" + name + "' already exists");
         }
         
@@ -61,4 +56,6 @@ public class ApplicationService {
         }
         applicationRepository.deleteById(id);
     }
+    
+
 }

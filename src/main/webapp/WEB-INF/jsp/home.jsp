@@ -13,8 +13,15 @@
         <body>
             <div class="container">
                 <header class="header">
-                    <h1>Mobile Screen Designer</h1>
-                    <p>Create and manage your mobile application screens</p>
+                    <div class="header-left">
+                        <h1>Mobile Screen Designer</h1>
+                        <p>Create and manage your mobile application screens</p>
+
+                    </div>
+                    <div class="header-right">
+                        <span class="user-info">Welcome, ${sessionScope.username}!</span>
+                        <a href="/logout" class="btn btn-secondary">Logout</a>
+                    </div>
                 </header>
 
                 <div class="actions">
@@ -38,6 +45,7 @@
                             </div>
                             <div class="app-actions">
                                 <button class="btn btn-secondary open-app" data-app-id="${app.id}">Open</button>
+                                <button class="btn btn-info edit-app" data-app-id="${app.id}">Edit</button>
                                 <button class="btn btn-danger delete-app" data-app-id="${app.id}">Delete</button>
                             </div>
                         </div>
@@ -57,18 +65,44 @@
                 <div class="modal-content">
                     <span class="close">&times;</span>
                     <h2>Create New Application</h2>
-                    <form id="createAppForm">
+                    <form id="createAppForm" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="appName">Application Name:</label>
                             <input type="text" id="appName" name="name" required>
                         </div>
                         <div class="form-group">
-                            <label for="appIcon">Icon Path (optional):</label>
-                            <input type="text" id="appIcon" name="iconPath" placeholder="/path/to/icon.png">
+                            <label for="appIcon">Application Icon:</label>
+                            <input type="file" id="appIcon" name="icon" accept="image/*">
+                            <small>Upload an icon image (PNG, JPG, GIF)</small>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Create</button>
                             <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Application Modal -->
+            <div id="editAppModal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Edit Application</h2>
+                    <form id="editAppForm" enctype="multipart/form-data">
+                        <input type="hidden" id="editAppId" name="id">
+                        <div class="form-group">
+                            <label for="editAppName">Application Name:</label>
+                            <input type="text" id="editAppName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editAppIcon">Application Icon:</label>
+                            <input type="file" id="editAppIcon" name="icon" accept="image/*">
+                            <small>Upload a new icon image (PNG, JPG, GIF)</small>
+                            <div id="currentIconPreview" class="current-icon-preview"></div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Update</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
                         </div>
                     </form>
                 </div>

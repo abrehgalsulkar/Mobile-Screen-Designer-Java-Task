@@ -16,40 +16,33 @@ class ScreenDesigner {
         this.setupEventListeners();
         this.loadExistingScreen();
         this.setupDragAndDrop();
-        this.loadScreenList(); // Load screen list on initialization
+        this.loadScreenList();
     }
 
     setupEventListeners() {
-        // Save screen button
         document.getElementById('saveScreenBtn').addEventListener('click', () => {
             this.saveScreen();
         });
 
-        // New screen button
         document.getElementById('newScreenBtn').addEventListener('click', () => {
             this.showNewScreenModal();
         });
 
-        // Property form inputs
         this.setupPropertyFormListeners();
 
-        // Screen actions
         this.setupScreenActionListeners();
 
-        // Modal close - click outside modal to close
         document.getElementById('newScreenModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('newScreenModal')) {
                 this.closeNewScreenModal();
             }
         });
 
-        // New screen form
         document.getElementById('newScreenForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.createNewScreen();
         });
 
-        // Cancel button for new screen modal
         document.getElementById('cancelScreenBtn').addEventListener('click', () => {
             this.closeNewScreenModal();
         });
@@ -66,7 +59,6 @@ class ScreenDesigner {
             }
         });
 
-        // Checkbox
         const checkbox = document.getElementById('componentChecked');
         if (checkbox) {
             checkbox.addEventListener('change', (e) => {
@@ -74,7 +66,6 @@ class ScreenDesigner {
             });
         }
 
-        // Action buttons
         document.getElementById('deleteComponentBtn').addEventListener('click', () => {
             this.deleteSelectedComponent();
         });
@@ -103,14 +94,12 @@ class ScreenDesigner {
     setupDragAndDrop() {
         const mobileScreen = document.getElementById('screenArea');
 
-        // Component toolbox drag start
         document.querySelectorAll('.component-item').forEach(item => {
             item.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', item.dataset.type);
             });
         });
 
-        // Mobile screen drop zone
         mobileScreen.addEventListener('dragover', (e) => {
             e.preventDefault();
         });
@@ -125,7 +114,6 @@ class ScreenDesigner {
             this.addComponent(componentType, x, y);
         });
 
-        // Click to deselect
         mobileScreen.addEventListener('click', (e) => {
             if (e.target === mobileScreen) {
                 this.deselectComponent();
@@ -137,7 +125,7 @@ class ScreenDesigner {
         const component = {
             id: this.generateId(),
             type: type,
-            x: Math.max(0, Math.min(x, 375 - 100)), // Constrain to screen bounds
+            x: Math.max(0, Math.min(x, 375 - 100)),
             y: Math.max(0, Math.min(y, 667 - 50)),
             width: 100,
             height: 50,
@@ -180,19 +168,15 @@ class ScreenDesigner {
             z-index: ${component.zIndex};
         `;
 
-        // Set content based on type
         this.setComponentContent(element, component);
 
-        // Add event listeners
         element.addEventListener('click', (e) => {
             e.stopPropagation();
             this.selectComponent(component);
         });
 
-        // Make draggable
         this.makeComponentDraggable(element, component);
 
-        // Add resize handles
         this.addResizeHandles(element, component);
 
         mobileScreen.appendChild(element);
@@ -228,7 +212,7 @@ class ScreenDesigner {
     makeComponentDraggable(element, component) {
         element.addEventListener('mousedown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                return; // Don't drag when clicking on input elements
+                return;
             }
 
             this.isDragging = true;
@@ -269,7 +253,6 @@ class ScreenDesigner {
         let newX = e.clientX - rect.left - this.dragOffset.x;
         let newY = e.clientY - rect.top - this.dragOffset.y;
 
-        // Constrain to screen bounds
         newX = Math.max(0, Math.min(newX, 375 - this.selectedComponent.width));
         newY = Math.max(0, Math.min(newY, 667 - this.selectedComponent.height));
 
@@ -324,7 +307,6 @@ class ScreenDesigner {
             }
         }
 
-        // Constrain to screen bounds
         newWidth = Math.min(newWidth, 375 - this.selectedComponent.x);
         newHeight = Math.min(newHeight, 667 - this.selectedComponent.y);
 
@@ -382,7 +364,7 @@ class ScreenDesigner {
         document.querySelector('.no-selection').style.display = 'none';
         document.getElementById('propertyForm').style.display = 'block';
 
-        // Populate form fields
+
         document.getElementById('componentType').value = component.type.charAt(0).toUpperCase() + component.type.slice(1);
         document.getElementById('componentX').value = component.x;
         document.getElementById('componentY').value = component.y;
@@ -393,7 +375,6 @@ class ScreenDesigner {
         document.getElementById('componentTextColor').value = component.textColor;
         document.getElementById('componentZIndex').value = component.zIndex;
 
-        // Show/hide checkbox group based on component type
         const checkboxGroup = document.querySelector('.checkbox-group');
         if (component.type === 'checkbox' || component.type === 'radio') {
             checkboxGroup.style.display = 'block';
@@ -402,7 +383,6 @@ class ScreenDesigner {
             checkboxGroup.style.display = 'none';
         }
 
-        // Show/hide image group based on component type
         const imageGroup = document.querySelector('.image-group');
         if (component.type === 'image') {
             imageGroup.style.display = 'block';
@@ -422,7 +402,6 @@ class ScreenDesigner {
         const property = propertyId.replace('component', '').toLowerCase();
         this.selectedComponent[property] = value;
 
-        // Update visual representation
         const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
         if (element) {
             switch (property) {
@@ -501,7 +480,6 @@ class ScreenDesigner {
             return;
         }
 
-        // Get screen name from current screen data or prompt for new name
         let screenName = window.currentScreenData?.name || '';
         if (!screenName || screenName === 'New Screen') {
             screenName = prompt('Enter screen name:');
@@ -537,7 +515,6 @@ class ScreenDesigner {
                 this.currentScreenId = screen.id;
                 this.updateCurrentScreenName(name);
                 alert('Screen saved successfully!');
-                // Update screen list instead of reloading
                 this.loadScreenList();
             } else {
                 const error = await response.text();
@@ -564,7 +541,6 @@ class ScreenDesigner {
 
             if (response.ok) {
                 alert('Screen updated successfully!');
-                // Update screen list after update
                 this.loadScreenList();
             } else {
                 const error = await response.text();
@@ -588,7 +564,6 @@ class ScreenDesigner {
     }
 
     loadScreenLayout(screen) {
-        // Clear current components
         this.clearComponents();
 
         try {
@@ -596,10 +571,8 @@ class ScreenDesigner {
             this.components = components;
             this.currentScreenId = screen.id;
 
-            // Update current screen name display
             this.updateCurrentScreenName(screen.name);
 
-            // Render all components
             components.forEach(component => {
                 this.renderComponent(component);
             });
@@ -617,7 +590,6 @@ class ScreenDesigner {
         this.selectedComponent = null;
         this.deselectComponent();
 
-        // Reset current screen name if no screen is loaded
         if (!this.currentScreenId) {
             this.updateCurrentScreenName('New Screen');
         }
@@ -625,7 +597,6 @@ class ScreenDesigner {
 
     loadExistingScreen() {
         if (window.currentScreenData && window.currentScreenData.id) {
-            // Only load if we have a real screen with an ID
             this.loadScreenLayout(window.currentScreenData);
         }
     }
@@ -647,15 +618,12 @@ class ScreenDesigner {
             return;
         }
 
-        // Clear current components and create new screen
         this.clearComponents();
         this.currentScreenId = null;
         this.closeNewScreenModal();
 
-        // Update current screen name display
         this.updateCurrentScreenName(screenName);
 
-        // Add a default component to start with
         this.addComponent('button', 50, 50);
 
         alert('New screen created! Add components and save when ready.');
@@ -673,7 +641,6 @@ class ScreenDesigner {
 
             if (response.ok) {
                 alert('Screen deleted successfully!');
-                // Update screen list instead of reloading
                 this.loadScreenList();
             } else {
                 const error = await response.text();
@@ -734,9 +701,10 @@ class ScreenDesigner {
             currentScreenNameElement.textContent = name;
         }
     }
+
+
 }
 
-// Initialize the designer when the page loads
 document.addEventListener('DOMContentLoaded', function () {
     new ScreenDesigner();
 });
