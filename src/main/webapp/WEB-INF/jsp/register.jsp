@@ -8,6 +8,8 @@
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Register - Mobile Screen Designer</title>
             <link rel="stylesheet" href="/css/style.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <style>
                 .auth-container {
                     max-width: 400px;
@@ -98,18 +100,39 @@
                     <div class="alert alert-error">${error}</div>
                 </c:if>
 
-                <form class="auth-form" action="/register" method="post">
+                <form class="auth-form" action="/register" method="post" id="registerForm">
                     <div class="form-group">
                         <label for="username">Username:</label>
-                        <input type="text" id="username" name="username" required>
+                        <input type="text" id="username" name="username" required data-parsley-required="true"
+                            data-parsley-minlength="3" data-parsley-trigger="blur">
+                        <div class="requirements">Minimum 3 characters</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required data-parsley-required="true"
+                            data-parsley-type="email" data-parsley-trigger="blur">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contactNumber">Contact Number:</label>
+                        <input type="tel" id="contactNumber" name="contactNumber"
+                            data-parsley-pattern="^[+]?[0-9\s\-\(\)]{10,20}$" data-parsley-trigger="blur">
+                        <div class="requirements">Optional: +1 (555) 123-4567 format</div>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required>
+                        <input type="password" id="password" name="password" required data-parsley-required="true"
+                            data-parsley-minlength="6" data-parsley-trigger="blur">
+                        <div class="requirements">Minimum 6 characters</div>
                     </div>
 
-
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password:</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required
+                            data-parsley-required="true" data-parsley-equalto="#password" data-parsley-trigger="blur">
+                    </div>
 
                     <button type="submit" class="btn btn-primary">Register</button>
                 </form>
@@ -118,6 +141,21 @@
                     <p>Already have an account? <a href="/login">Login here</a></p>
                 </div>
             </div>
+
+            <script>
+                $(document).ready(function () {
+                    $('#registerForm').parsley();
+                });
+                var errorMessage = '${error}';
+                if (errorMessage && errorMessage.trim() !== '') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Registration Failed',
+                        text: errorMessage,
+                        confirmButtonColor: '#007bff'
+                    });
+                }
+            </script>
         </body>
 
         </html>

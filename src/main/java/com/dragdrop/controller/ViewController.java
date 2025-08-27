@@ -12,8 +12,6 @@ import com.dragdrop.model.Application;
 import com.dragdrop.service.ApplicationService;
 import com.dragdrop.service.ScreenService;
 
-import jakarta.servlet.http.HttpSession;
-
 @Controller
 public class ViewController {
     
@@ -24,12 +22,7 @@ public class ViewController {
     private ScreenService screenService;
     
     @GetMapping("/")
-    public String home(HttpSession session, Model model) {
-        // Check if user is logged in
-        if (session.getAttribute("userId") == null) {
-            return "redirect:/login";
-        }
-        
+    public String home(Model model) {
         try {
             List<Application> applications = applicationService.getAllApplicationsByUser();
             model.addAttribute("applications", applications);
@@ -41,12 +34,7 @@ public class ViewController {
     }
     
     @GetMapping("/designer/{applicationId}")
-    public String designer(@PathVariable Long applicationId, HttpSession session, Model model) {
-        // Check if user is logged in
-        if (session.getAttribute("userId") == null) {
-            return "redirect:/login";
-        }
-        
+    public String designer(@PathVariable Long applicationId, Model model) {
         try {
             model.addAttribute("application", applicationService.getApplicationById(applicationId));
             model.addAttribute("screens", screenService.getAllScreensByApplication(applicationId));
@@ -61,13 +49,7 @@ public class ViewController {
     @GetMapping("/designer/{applicationId}/screen/{screenId}")
     public String editScreen(@PathVariable Long applicationId, 
                            @PathVariable Long screenId, 
-                           HttpSession session,
                            Model model) {
-        // Check if user is logged in
-        if (session.getAttribute("userId") == null) {
-            return "redirect:/login";
-        }
-        
         try {
             model.addAttribute("application", applicationService.getApplicationById(applicationId));
             model.addAttribute("screen", screenService.getScreenById(screenId));

@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
             deleteApplication(appId);
         }
     });
+    setupIconPreviews();
 });
 
 // Create new application
@@ -118,9 +119,19 @@ function openApplication(appId) {
     window.location.href = `/designer/${appId}`;
 }
 
-// Delete application
 async function deleteApplication(appId) {
-    if (!confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
+    const result = await Swal.fire({
+        title: 'Delete Application',
+        text: 'Are you sure you want to delete this application? This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) {
         return;
     }
 
@@ -247,69 +258,81 @@ function closeEditModal() {
     document.getElementById('currentIconPreview').innerHTML = '';
 }
 
-// Show notification
 function showNotification(message, type) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-
-    // Add styles
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 5px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-    `;
-
-    if (type === 'success') {
-        notification.style.backgroundColor = '#28a745';
-    } else if (type === 'error') {
-        notification.style.backgroundColor = '#dc3545';
-    }
-
-    // Add to page
-    document.body.appendChild(notification);
-
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
+    Swal.fire({
+        icon: type,
+        title: type === 'success' ? 'Success!' : 'Error!',
+        text: message,
+        timer: 3000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+    });
 }
 
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
+function setupIconPreviews() {
+    const createIconInput = document.getElementById('appIcon');
+    if (createIconInput) {
+        createIconInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+                if (!allowedTypes.includes(file.type)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'Please select only PNG, JPG, JPEG, or GIF files.',
+                        confirmButtonText: 'OK'
+                    });
+                    e.target.value = '';
+                    document.getElementById('iconPreview').style.display = 'none';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const preview = document.getElementById('iconPreview');
+                    const previewImg = document.getElementById('iconPreviewImg');
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('iconPreview').style.display = 'none';
+            }
+        });
     }
-    
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
+
+    const editIconInput = document.getElementById('editAppIcon');
+    if (editIconInput) {
+        editIconInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+                if (!allowedTypes.includes(file.type)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'Please select only PNG, JPG, JPEG, or GIF files.',
+                        confirmButtonText: 'OK'
+                    });
+                    e.target.value = '';
+                    document.getElementById('editIconPreview').style.display = 'none';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const preview = document.getElementById('editIconPreview');
+                    const previewImg = document.getElementById('editIconPreviewImg');
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('editIconPreview').style.display = 'none';
+            }
+        });
     }
-`;
-document.head.appendChild(style);
+}

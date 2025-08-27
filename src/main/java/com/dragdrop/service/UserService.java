@@ -1,36 +1,60 @@
 package com.dragdrop.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.dragdrop.model.User;
 import com.dragdrop.repository.UserRepository;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
     
     @Autowired
     private UserRepository userRepository;
     
-    public User createUser(String username, String password) {
-        if (userRepository.existsByUsername(username)) {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .roles("USER")
+                .build();
+    }
+    
+    public User createUser(String username, String email, String contactNumber, String password) {
+        // case-insensitive username uniqueness
+        if (userRepository.existsByUsernameIgnoreCase(username)) {
             throw new RuntimeException("Username already exists");
         }
         
-        User user = new User(username, password);
+        // email unique check
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new RuntimeException("Email already exists");
+        }
+        
+        User user = new User(username, email, contactNumber, passwordEncoder.encode(password));
         return userRepository.save(user);
     }
     
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElse(null);
+        return userRepository.findByUsernameIgnoreCase(username).orElse(null);
     }
     
-    public User authenticateUser(String username, String password) {
-        User user = findByUsername(username);
-        if (user != null && user.getPassword().equals(password)) {
-            return user;
-        }
-        return null;
-    }
+    // public boolean existsByUsername(String username) {
+    //     return userRepository.existsByUsernameIgnoreCase(username);
+    // }
+    
+    // public boolean existsByEmail(String email) {
+    //     return userRepository.existsByEmailIgnoreCase(email);
+    // }
 }

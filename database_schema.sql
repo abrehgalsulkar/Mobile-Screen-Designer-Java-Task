@@ -33,11 +33,13 @@ CREATE INDEX idx_screen_created_at ON screen(created_at);
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    contact_number VARCHAR(20),
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create a default user for testing
-INSERT INTO users (username, password) VALUES 
-('admin', 'admin123')
+-- Create a default user for testing (password will be hashed by Spring Security)
+INSERT INTO users (username, email, contact_number, password) VALUES 
+('admin', 'admin@example.com', '+1234567890', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDa')
 ON CONFLICT (username) DO NOTHING;

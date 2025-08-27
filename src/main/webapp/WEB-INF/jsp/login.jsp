@@ -8,6 +8,7 @@
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Login - Mobile Screen Designer</title>
             <link rel="stylesheet" href="/css/style.css">
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <style>
                 .auth-container {
                     max-width: 400px;
@@ -94,13 +95,7 @@
                     <p>Please login to continue</p>
                 </div>
 
-                <c:if test="${not empty error}">
-                    <div class="alert alert-error">${error}</div>
-                </c:if>
 
-                <c:if test="${not empty message}">
-                    <div class="alert alert-success">${message}</div>
-                </c:if>
 
                 <form class="auth-form" action="/login" method="post">
                     <div class="form-group">
@@ -122,6 +117,29 @@
                         style="display: inline-block; margin-top: 10px;">Create Account</a>
                 </div>
             </div>
+
+            <script>
+                var errorMessage = '${error}';
+                var successMessage = '${message}';
+
+                if (errorMessage && errorMessage.trim() !== '') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Login Failed',
+                        text: errorMessage,
+                        confirmButtonColor: '#007bff'
+                    });
+                }
+
+                if (successMessage && successMessage.trim() !== '') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: successMessage,
+                        confirmButtonColor: '#007bff'
+                    });
+                }
+            </script>
         </body>
 
         </html>

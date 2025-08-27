@@ -9,6 +9,7 @@
             <title>Mobile Screen Designer - ${application.name}</title>
             <link rel="stylesheet" href="/css/style.css">
             <link rel="stylesheet" href="/css/designer.css">
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         </head>
 
         <body>
@@ -70,14 +71,18 @@
                     </div>
                 </div>
 
-                <!-- Mobile Device Frame -->
                 <div class="mobile-frame-container">
                     <div class="mobile-device">
                         <div class="device-header">
                             <div class="device-notch"></div>
                         </div>
                         <div class="screen-area" id="screenArea">
-                            <!-- Components will be added here -->
+                        </div>
+                        <div class="resize-handle" id="resizeHandle">
+                            <div class="resize-indicator">
+                                <span>↕</span>
+                                <span>Drag to resize height</span>
+                            </div>
                         </div>
                         <div class="device-footer">
                             <div class="home-indicator"></div>
@@ -88,6 +93,24 @@
                 <!-- Property Editor -->
                 <div class="property-editor">
                     <h3>Properties</h3>
+
+                    <div class="screen-background-section">
+                        <h4>Screen Background</h4>
+                        <div class="background-options">
+                            <div class="background-color-option">
+                                <label>Background Color:</label>
+                                <input type="color" id="screenBackgroundColor" value="#ffffff">
+                            </div>
+                            <div class="background-image-option">
+                                <label>Background Image:</label>
+                                <input type="file" id="screenBackgroundImage" accept="image/*">
+                                <div class="background-preview" id="backgroundPreview">
+                                    <span>No image selected</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="propertyForm" class="property-form" style="display: none;">
                         <div class="form-group">
                             <label for="componentType">Type:</label>
@@ -132,10 +155,6 @@
                             <input type="file" id="componentImage" accept="image/*">
                         </div>
                         <div class="form-group">
-                            <label for="componentZIndex">Z-Index:</label>
-                            <input type="number" id="componentZIndex" min="1" value="1">
-                        </div>
-                        <div class="form-group">
                             <button type="button" id="bringFrontBtn" class="btn btn-small">Bring Front</button>
                             <button type="button" id="sendBackBtn" class="btn btn-small">Send Back</button>
                         </div>
@@ -157,7 +176,6 @@
                     <button id="newScreenBtn" class="btn btn-primary btn-small">New Screen</button>
                 </div>
                 <div class="screen-list" id="screenList">
-                    <!-- Screens will be listed here -->
                 </div>
             </aside>
 
@@ -180,26 +198,24 @@
 
             <script>
                 window.applicationData = {
-                    id: ${ application.id },
-                name: "${application.name}"
+                    id: '${application.id}',
+                    name: '${application.name}'
                 };
 
-                <c:choose>
-                    <c:when test="${not empty screen and screen.id != null}">
-                        window.currentScreenData = {
-                            id: ${screen.id},
-                        name: "${screen.name}",
+                <c:if test="${not empty screen and screen.id != null}">
+                    window.currentScreenData = {
+                        id: '${screen.id}',
+                        name: '${screen.name}',
                         layoutJson: '${screen.layoutJson}'
-                        };
-                    </c:when>
-                    <c:otherwise>
-                        window.currentScreenData = {
-                            id: null,
-                        name: "New Screen",
-                        layoutJson: "[]"
-                        };
-                    </c:otherwise>
-                </c:choose>
+                    };
+                </c:if>
+                <c:if test="${empty screen or screen.id == null}">
+                    window.currentScreenData = {
+                        id: null,
+                        name: 'New Screen',
+                        layoutJson: '[]'
+                    };
+                </c:if>
             </script>
             <script src="/js/designer.js"></script>
         </body>

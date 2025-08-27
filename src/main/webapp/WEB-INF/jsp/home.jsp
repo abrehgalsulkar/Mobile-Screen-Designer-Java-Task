@@ -8,6 +8,7 @@
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Mobile Screen Designer - Home</title>
             <link rel="stylesheet" href="/css/style.css">
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         </head>
 
         <body>
@@ -19,8 +20,8 @@
 
                     </div>
                     <div class="header-right">
-                        <span class="user-info">Welcome, ${sessionScope.username}!</span>
-                        <a href="/logout" class="btn btn-secondary">Logout</a>
+                        <span class="user-info">Welcome, <span id="currentUsername"></span>!</span>
+                        <button id="logoutBtn" class="btn btn-secondary">Logout</button>
                     </div>
                 </header>
 
@@ -60,7 +61,6 @@
                 </c:if>
             </div>
 
-            <!-- Create Application Modal -->
             <div id="createAppModal" class="modal">
                 <div class="modal-content">
                     <span class="close">&times;</span>
@@ -72,8 +72,12 @@
                         </div>
                         <div class="form-group">
                             <label for="appIcon">Application Icon:</label>
-                            <input type="file" id="appIcon" name="icon" accept="image/*">
-                            <small>Upload an icon image (PNG, JPG, GIF)</small>
+                            <input type="file" id="appIcon" name="icon" accept=".png,.jpg,.jpeg,.gif">
+                            <small>Upload an icon image (PNG, JPG, GIF only)</small>
+                            <div id="iconPreview" class="icon-preview" style="display: none;">
+                                <img id="iconPreviewImg" src="" alt="Icon Preview"
+                                    style="max-width: 100px; max-height: 100px; margin-top: 10px;">
+                            </div>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Create</button>
@@ -96,9 +100,13 @@
                         </div>
                         <div class="form-group">
                             <label for="editAppIcon">Application Icon:</label>
-                            <input type="file" id="editAppIcon" name="icon" accept="image/*">
-                            <small>Upload a new icon image (PNG, JPG, GIF)</small>
+                            <input type="file" id="editAppIcon" name="icon" accept=".png,.jpg,.jpeg,.gif">
+                            <small>Upload a new icon image (PNG, JPG, GIF only)</small>
                             <div id="currentIconPreview" class="current-icon-preview"></div>
+                            <div id="editIconPreview" class="icon-preview" style="display: none;">
+                                <img id="editIconPreviewImg" src="" alt="Icon Preview"
+                                    style="max-width: 100px; max-height: 100px; margin-top: 10px;">
+                            </div>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Update</button>
@@ -109,6 +117,32 @@
             </div>
 
             <script src="/js/home.js"></script>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.getElementById('currentUsername').textContent = 'User';
+                    document.getElementById('logoutBtn').addEventListener('click', function () {
+                        Swal.fire({
+                            title: 'Logout Confirmation',
+                            text: 'Are you sure you want to logout?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#007bff',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, Logout',
+                            cancelButtonText: 'Cancel'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = '/logout';
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        });
+                    });
+                });
+            </script>
         </body>
 
         </html>

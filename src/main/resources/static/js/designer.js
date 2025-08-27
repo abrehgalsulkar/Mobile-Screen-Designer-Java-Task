@@ -9,6 +9,17 @@ class ScreenDesigner {
         this.isResizing = false;
         this.resizeHandle = null;
 
+        this.isScreenResizing = false;
+        this.screenResizeStartY = 0;
+        this.screenResizeStartHeight = 0;
+        this.screenBackgroundColor = '#ffffff';
+        this.screenBackgroundImage = null;
+
+        this.isComponentDragging = false;
+        this.isComponentResizing = false;
+        this.componentResizeHandle = null;
+        this.contextMenu = null;
+
         this.init();
     }
 
@@ -17,6 +28,10 @@ class ScreenDesigner {
         this.loadExistingScreen();
         this.setupDragAndDrop();
         this.loadScreenList();
+
+        this.setupScreenResizing();
+        this.setupScreenBackground();
+        this.setupContextMenu();
     }
 
     setupEventListeners() {
@@ -46,6 +61,15 @@ class ScreenDesigner {
         document.getElementById('cancelScreenBtn').addEventListener('click', () => {
             this.closeNewScreenModal();
         });
+
+        // check if screen name is already taken
+        document.getElementById('screenName').addEventListener('input', (e) => {
+            this.validateScreenName(e.target.value);
+        });
+
+        this.setupPageNavigationWarning();
+
+        this.setupLogoutConfirmation();
     }
 
     setupPropertyFormListeners() {
@@ -247,7 +271,7 @@ class ScreenDesigner {
     handleMouseMove(e) {
         if (!this.isDragging || !this.selectedComponent) return;
 
-        const mobileScreen = document.getElementById('mobileScreen');
+        const mobileScreen = document.getElementById('screenArea');
         const rect = mobileScreen.getBoundingClientRect();
 
         let newX = e.clientX - rect.left - this.dragOffset.x;
@@ -277,7 +301,7 @@ class ScreenDesigner {
     handleResizeMove(e) {
         if (!this.isResizing || !this.selectedComponent) return;
 
-        const mobileScreen = document.getElementById('mobileScreen');
+        const mobileScreen = document.getElementById('screenArea');
         const rect = mobileScreen.getBoundingClientRect();
         const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
 
@@ -474,24 +498,134 @@ class ScreenDesigner {
         return 'comp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    saveScreen() {
+    async saveScreen() {
         if (this.components.length === 0) {
-            alert('Please add at least one component before saving.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Components',
+                text: 'Please add at least one component before saving.',
+                confirmButtonText: 'OK'
+            });
             return;
         }
 
-        let screenName = window.currentScreenData?.name || '';
+        let screenName = document.getElementById('currentScreenName').textContent;
+st
         if (!screenName || screenName === 'New Screen') {
-            screenName = prompt('Enter screen name:');
-            if (!screenName) return;
+            const result = await Swal.fire({
+                title: 'Enter Screen Name',
+                input: 'text',
+                inputLabel: 'Screen Name:',
+                inputPlaceholder: 'Enter a name for this screen...',
+                inputValidator: (value) => {
+                    if (!value || value.trim() === '') {
+                        return 'Screen name cannot be empty';
+                    }
+                    if (value.trim() === 'New Screen') {
+                        return 'Please enter a different name';
+                    }
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Save Screen',
+                cancelButtonText: 'Cancel',
+                showLoaderOnConfirm: true,
+                preConfirm: async (name) => {
+                    if (await this.screenNameExists(name.trim())) {
+                        Swal.showValidationMessage('A screen with this name already exists');
+                        return false;
+                    }
+                    return name.trim();
+                }
+            });
+
+            if (result.isConfirmed && result.value) {
+                screenName = result.value;
+                document.getElementById('currentScreenName').textContent = screenName;
+            } else {
+                return;
+            }
         }
 
         const layoutJson = JSON.stringify(this.components);
+        const screenData = {
+            applicationId: window.applicationData.id,
+            name: screenName,
+            layoutJson: layoutJson,
+            screenImagePath: null
+        };
 
-        if (this.currentScreenId) {
-            this.updateScreen(this.currentScreenId, screenName, layoutJson);
-        } else {
-            this.createScreen(screenName, layoutJson);
+        try {
+            const url = this.currentScreenId ?
+                `/api/screens/${this.currentScreenId}` :
+                '/api/screens';
+
+            const method = this.currentScreenId ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(screenData)
+            });
+
+            if (response.ok) {
+                const savedScreen = await response.json();
+                this.currentScreenId = savedScreen.id;
+
+                if (method === 'POST') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Screen Saved!',
+                        text: `Screen "${screenName}" saved successfully!`,
+                        confirmButtonText: 'OK',
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Screen Updated!',
+                        text: `Screen "${screenName}" updated successfully!`,
+                        confirmButtonText: 'OK',
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                }
+
+                this.loadScreenList();
+            } else {
+                const errorResponse = await response.text();
+                let errorMessage = 'Error saving screen';
+
+                try {
+                    const errorData = JSON.parse(errorResponse);
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                } catch (e) {
+                    if (errorResponse.includes('already exists')) {
+                        errorMessage = 'A screen with this name already exists. Please choose a different name.';
+                    } else {
+                        errorMessage = errorResponse;
+                    }
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Saving Screen',
+                    text: errorMessage,
+                    confirmButtonText: 'OK'
+                });
+            }
+        } catch (error) {
+            console.error('Error saving screen:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Saving Screen',
+                text: 'Error saving screen: ' + error.message,
+                confirmButtonText: 'OK'
+            });
         }
     }
 
@@ -514,14 +648,31 @@ class ScreenDesigner {
                 const screen = await response.json();
                 this.currentScreenId = screen.id;
                 this.updateCurrentScreenName(name);
-                alert('Screen saved successfully!');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Screen Saved!',
+                    text: 'Screen saved successfully!',
+                    confirmButtonText: 'OK',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
                 this.loadScreenList();
             } else {
                 const error = await response.text();
-                alert('Error saving screen: ' + error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Saving Screen',
+                    text: 'Error saving screen: ' + error,
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
-            alert('Error saving screen: ' + error.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Saving Screen',
+                text: 'Error saving screen: ' + error.message,
+                confirmButtonText: 'OK'
+            });
         }
     }
 
@@ -540,14 +691,31 @@ class ScreenDesigner {
             });
 
             if (response.ok) {
-                alert('Screen updated successfully!');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Screen Updated!',
+                    text: 'Screen updated successfully!',
+                    confirmButtonText: 'OK',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
                 this.loadScreenList();
             } else {
                 const error = await response.text();
-                alert('Error updating screen: ' + error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Updating Screen',
+                    text: 'Error updating screen: ' + error,
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
-            alert('Error updating screen: ' + error.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Updating Screen',
+                text: 'Error updating screen: ' + error.message,
+                confirmButtonText: 'OK'
+            });
         }
     }
 
@@ -559,7 +727,12 @@ class ScreenDesigner {
                 this.loadScreenLayout(screen);
             }
         } catch (error) {
-            alert('Error loading screen: ' + error.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Loading Screen',
+                text: 'Error loading screen: ' + error.message,
+                confirmButtonText: 'OK'
+            });
         }
     }
 
@@ -577,18 +750,41 @@ class ScreenDesigner {
                 this.renderComponent(component);
             });
 
-            alert(`Screen "${screen.name}" loaded successfully!`);
+            Swal.fire({
+                icon: 'success',
+                title: 'Screen Loaded!',
+                text: `Screen "${screen.name}" loaded successfully!`,
+                confirmButtonText: 'OK',
+                timer: 2000,
+                timerProgressBar: true
+            });
         } catch (error) {
-            alert('Error parsing screen layout: ' + error.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Parsing Layout',
+                text: 'Error parsing screen layout: ' + error.message,
+                confirmButtonText: 'OK'
+            });
         }
     }
 
     clearComponents() {
         const mobileScreen = document.getElementById('screenArea');
+
         mobileScreen.innerHTML = '';
+
         this.components = [];
         this.selectedComponent = null;
+        this.isDragging = false;
+        this.dragOffset = { x: 0, y: 0 };
+        this.isResizing = false;
+        this.resizeHandle = null;
+
         this.deselectComponent();
+
+        document.querySelectorAll('.component-selected').forEach(el => {
+            el.classList.remove('component-selected');
+        });
 
         if (!this.currentScreenId) {
             this.updateCurrentScreenName('New Screen');
@@ -608,13 +804,35 @@ class ScreenDesigner {
     closeNewScreenModal() {
         document.getElementById('newScreenModal').style.display = 'none';
         document.getElementById('newScreenForm').reset();
+
+        const nameInput = document.getElementById('screenName');
+        const submitBtn = document.getElementById('newScreenForm').querySelector('button[type="submit"]');
+
+        nameInput.style.borderColor = '#ddd';
+        submitBtn.disabled = false;
+        this.hideScreenNameError();
     }
 
     async createNewScreen() {
-        const screenName = document.getElementById('screenName').value;
+        const screenName = document.getElementById('screenName').value.trim();
 
-        if (!screenName.trim()) {
-            alert('Please enter a screen name.');
+        if (!screenName) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Screen Name Required',
+                text: 'Please enter a screen name.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if (await this.screenNameExists(screenName)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Screen Name Exists',
+                text: 'A screen with this name already exists. Please choose a different name.',
+                confirmButtonText: 'OK'
+            });
             return;
         }
 
@@ -626,11 +844,42 @@ class ScreenDesigner {
 
         this.addComponent('button', 50, 50);
 
-        alert('New screen created! Add components and save when ready.');
+        Swal.fire({
+            icon: 'success',
+            title: 'New Screen Created!',
+            text: 'New screen created! Add components and save when ready.',
+            confirmButtonText: 'OK',
+            timer: 2000,
+            timerProgressBar: true
+        });
+    }
+
+    async screenNameExists(screenName) {
+        try {
+            const response = await fetch(`/api/screens/application/${window.applicationData.id}`);
+            if (response.ok) {
+                const screens = await response.json();
+                return screens.some(screen => screen.name.toLowerCase() === screenName.toLowerCase());
+            }
+        } catch (error) {
+            console.error('Error checking screen names:', error);
+        }
+        return false;
     }
 
     async deleteScreen(screenId) {
-        if (!confirm('Are you sure you want to delete this screen?')) {
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: 'Delete Screen',
+            text: 'Are you sure you want to delete this screen?',
+            showCancelButton: true,
+            confirmButtonText: 'Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d'
+        });
+
+        if (!result.isConfirmed) {
             return;
         }
 
@@ -640,14 +889,31 @@ class ScreenDesigner {
             });
 
             if (response.ok) {
-                alert('Screen deleted successfully!');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Screen Deleted!',
+                    text: 'Screen deleted successfully!',
+                    confirmButtonText: 'OK',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
                 this.loadScreenList();
             } else {
                 const error = await response.text();
-                alert('Error deleting screen: ' + error.message);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Deleting Screen',
+                    text: 'Error deleting screen: ' + error.message,
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (error) {
-            alert('Error deleting screen: ' + error.message);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Deleting Screen',
+                text: 'Error deleting screen: ' + error.message,
+                confirmButtonText: 'OK'
+            });
         }
     }
 
@@ -702,7 +968,591 @@ class ScreenDesigner {
         }
     }
 
+    async validateScreenName(screenName) {
+        const nameInput = document.getElementById('screenName');
+        const submitBtn = document.getElementById('newScreenForm').querySelector('button[type="submit"]');
 
+        if (!screenName.trim()) {
+            nameInput.style.borderColor = '#ddd';
+            submitBtn.disabled = false;
+            return;
+        }
+
+        if (await this.screenNameExists(screenName)) {
+            nameInput.style.borderColor = '#dc3545';
+            submitBtn.disabled = true;
+            this.showScreenNameError('A screen with this name already exists');
+        } else {
+            nameInput.style.borderColor = '#28a745';
+            submitBtn.disabled = false;
+            this.hideScreenNameError();
+        }
+    }
+
+    showScreenNameError(message) {
+        let errorDiv = document.getElementById('screenNameError');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.id = 'screenNameError';
+            errorDiv.className = 'error-message';
+            errorDiv.style.color = '#dc3545';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.style.marginTop = '5px';
+
+            const nameInput = document.getElementById('screenName');
+            nameInput.parentNode.appendChild(errorDiv);
+        }
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+
+    hideScreenNameError() {
+        const errorDiv = document.getElementById('screenNameError');
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+    }
+
+    setupScreenResizing() {
+        const resizeHandle = document.getElementById('resizeHandle');
+        if (!resizeHandle) return;
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.isScreenResizing = true;
+            this.screenResizeStartY = e.clientY;
+            this.screenResizeStartHeight = parseInt(getComputedStyle(document.getElementById('screenArea')).height);
+
+            document.addEventListener('mousemove', this.handleScreenResize.bind(this));
+            document.addEventListener('mouseup', this.stopScreenResize.bind(this));
+        });
+    }
+
+    handleScreenResize(e) {
+        if (!this.isScreenResizing) return;
+
+        const deltaY = e.clientY - this.screenResizeStartY;
+        const newHeight = Math.max(400, Math.min(1000, this.screenResizeStartHeight + deltaY));
+
+        const screenArea = document.getElementById('screenArea');
+        const mobileDevice = document.querySelector('.mobile-device');
+
+        screenArea.style.height = `${newHeight}px`;
+        mobileDevice.style.height = `${newHeight + 60}px`; // 60px for header + footer
+
+        this.updateComponentHeightConstraints(newHeight);
+    }
+
+    stopScreenResize() {
+        this.isScreenResizing = false;
+        document.removeEventListener('mousemove', this.handleScreenResize.bind(this));
+        document.removeEventListener('mouseup', this.stopScreenResize.bind(this));
+    }
+
+    updateComponentHeightConstraints(maxHeight) {
+        const heightInput = document.getElementById('componentHeight');
+        if (heightInput) {
+            heightInput.max = maxHeight;
+        }
+    }
+
+    setupScreenBackground() {
+        const colorInput = document.getElementById('screenBackgroundColor');
+        const imageInput = document.getElementById('screenBackgroundImage');
+
+        if (colorInput) {
+            colorInput.addEventListener('change', (e) => {
+                this.screenBackgroundColor = e.target.value;
+                this.updateScreenBackground();
+            });
+        }
+
+        if (imageInput) {
+            imageInput.addEventListener('change', (e) => {
+                this.handleBackgroundImageUpload(e.target.files[0]);
+            });
+        }
+    }
+
+    handleBackgroundImageUpload(file) {
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid File Type',
+                text: 'Please select an image file',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.screenBackgroundImage = e.target.result;
+            this.updateScreenBackground();
+            this.updateBackgroundPreview();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    updateScreenBackground() {
+        const screenArea = document.getElementById('screenArea');
+        if (!screenArea) return;
+
+        if (this.screenBackgroundImage) {
+            screenArea.style.background = `url(${this.screenBackgroundImage}) center/cover no-repeat`;
+            screenArea.classList.add('has-background-image');
+        } else {
+            screenArea.style.background = this.screenBackgroundColor;
+            screenArea.classList.remove('has-background-image');
+        }
+    }
+
+    updateBackgroundPreview() {
+        const preview = document.getElementById('backgroundPreview');
+        if (!preview) return;
+
+        if (this.screenBackgroundImage) {
+            preview.style.background = `url(${this.screenBackgroundImage}) center/cover no-repeat`;
+            preview.classList.add('has-image');
+            preview.innerHTML = '<span>Background image loaded</span>';
+        } else {
+            preview.style.background = 'none';
+            preview.classList.remove('has-image');
+            preview.innerHTML = '<span>No image selected</span>';
+        }
+    }
+
+    setupContextMenu() {
+        this.createContextMenu();
+        this.setupComponentInteraction();
+    }
+
+    createContextMenu() {
+        this.contextMenu = document.createElement('div');
+        this.contextMenu.className = 'context-menu';
+        this.contextMenu.innerHTML = `
+            <div class="context-menu-item" data-action="delete">Delete</div>
+            <div class="context-menu-item" data-action="bring-front">Bring to Front</div>
+            <div class="context-menu-item" data-action="send-back">Send to Back</div>
+        `;
+        document.body.appendChild(this.contextMenu);
+
+        this.contextMenu.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            if (action && this.selectedComponent) {
+                this.handleContextMenuAction(action);
+            }
+            this.hideContextMenu();
+        });
+    }
+
+    handleContextMenuAction(action) {
+        switch (action) {
+            case 'delete':
+                this.deleteSelectedComponent();
+                break;
+            case 'bring-front':
+                this.bringComponentToFront();
+                break;
+            case 'send-back':
+                this.sendComponentToBack();
+                break;
+        }
+    }
+
+    showContextMenu(e, component) {
+        e.preventDefault();
+        this.contextMenu.style.display = 'block';
+        this.contextMenu.style.left = e.clientX + 'px';
+        this.contextMenu.style.top = e.clientY + 'px';
+    }
+
+    hideContextMenu() {
+        if (this.contextMenu) {
+            this.contextMenu.style.display = 'none';
+        }
+    }
+
+    setupComponentInteraction() {
+        document.addEventListener('click', () => {
+            this.hideContextMenu();
+        });
+
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.closest('.draggable-component')) {
+                e.preventDefault();
+                const component = e.target.closest('.draggable-component');
+                this.selectComponent(component);
+                this.showContextMenu(e, component);
+            }
+        });
+    }
+
+    selectComponent(component) {
+        if (this.selectedComponent) {
+            this.selectedComponent.classList.remove('selected');
+            this.removeResizeHandles();
+        }
+
+        this.selectedComponent = component;
+        component.classList.add('selected');
+        this.addResizeHandles(component);
+        this.showPropertyForm(component);
+    }
+
+    addResizeHandles(component) {
+        const handles = ['nw', 'ne', 'sw', 'se'];
+        handles.forEach(pos => {
+            const handle = document.createElement('div');
+            handle.className = `component-resize-handle ${pos}`;
+            handle.dataset.position = pos;
+            component.appendChild(handle);
+
+            handle.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                this.startComponentResize(e, pos);
+            });
+        });
+    }
+
+    removeResizeHandles() {
+        if (this.selectedComponent) {
+            this.selectedComponent.querySelectorAll('.component-resize-handle').forEach(handle => {
+                handle.remove();
+            });
+        }
+    }
+
+    startComponentResize(e, position) {
+        e.preventDefault();
+        this.isComponentResizing = true;
+        this.componentResizeHandle = position;
+
+        const rect = this.selectedComponent.getBoundingClientRect();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = rect.width;
+        const startHeight = rect.height;
+        const startLeft = rect.left;
+        const startTop = rect.top;
+
+        const handleMouseMove = (e) => {
+            if (!this.isComponentResizing) return;
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
+            let newWidth = startWidth;
+            let newHeight = startHeight;
+            let newLeft = startLeft;
+            let newTop = startTop;
+
+            switch (position) {
+                case 'se':
+                    newWidth = Math.max(50, startWidth + deltaX);
+                    newHeight = Math.max(30, startHeight + deltaY);
+                    break;
+                case 'sw':
+                    newWidth = Math.max(50, startWidth - deltaX);
+                    newHeight = Math.max(30, startHeight + deltaY);
+                    newLeft = startLeft + deltaX;
+                    break;
+                case 'ne':
+                    newWidth = Math.max(50, startWidth + deltaX);
+                    newHeight = Math.max(30, startHeight - deltaY);
+                    newTop = startTop + deltaY;
+                    break;
+                case 'nw':
+                    newWidth = Math.max(50, startWidth - deltaX);
+                    newHeight = Math.max(30, startHeight - deltaY);
+                    newLeft = startLeft + deltaX;
+                    newTop = startTop + deltaY;
+                    break;
+            }
+
+            this.selectedComponent.style.width = newWidth + 'px';
+            this.selectedComponent.style.height = newHeight + 'px';
+            this.selectedComponent.style.left = newLeft + 'px';
+            this.selectedComponent.style.top = newTop + 'px';
+
+            this.updatePropertyFormFromComponent();
+        };
+
+        const handleMouseUp = () => {
+            this.isComponentResizing = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    updatePropertyFormFromComponent() {
+        if (!this.selectedComponent) return;
+
+        const rect = this.selectedComponent.getBoundingClientRect();
+        const screenRect = document.getElementById('screenArea').getBoundingClientRect();
+
+        const x = rect.left - screenRect.left;
+        const y = rect.top - screenRect.top;
+        const width = rect.width;
+        const height = rect.height;
+
+        // Update form inputs
+        const xInput = document.getElementById('componentX');
+        const yInput = document.getElementById('componentY');
+        const widthInput = document.getElementById('componentWidth');
+        const heightInput = document.getElementById('componentHeight');
+
+        if (xInput) xInput.value = Math.round(x);
+        if (yInput) yInput.value = Math.round(y);
+        if (widthInput) widthInput.value = Math.round(width);
+        if (heightInput) heightInput.value = Math.round(height);
+
+        // Update component data
+        this.updateComponentData();
+    }
+
+    updateComponentData() {
+        if (!this.selectedComponent) return;
+
+        const componentId = this.selectedComponent.dataset.componentId;
+        const component = this.components.find(c => c.id === componentId);
+
+        if (component) {
+            const rect = this.selectedComponent.getBoundingClientRect();
+            const screenRect = document.getElementById('screenArea').getBoundingClientRect();
+
+            component.x = Math.round(rect.left - screenRect.left);
+            component.y = Math.round(rect.top - screenRect.top);
+            component.width = Math.round(rect.width);
+            component.height = Math.round(rect.height);
+        }
+    }
+
+    // Override the existing addComponent method to add resize handles
+    addComponent(type, x, y, width = 100, height = 50) {
+        const component = {
+            id: Date.now().toString(),
+            type: type,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            text: this.getDefaultText(type),
+            placeholder: this.getDefaultPlaceholder(type),
+            textColor: '#000000',
+            checked: false,
+            imagePath: null
+        };
+
+        this.components.push(component);
+        this.renderComponent(component);
+
+        // Select the newly added component
+        const componentElement = document.querySelector(`[data-component-id="${component.id}"]`);
+        if (componentElement) {
+            this.selectComponent(componentElement);
+        }
+
+        return component;
+    }
+
+    // Override the existing renderComponent method to add resize handles
+    renderComponent(component) {
+        const mobileScreen = document.getElementById('screenArea');
+        const componentElement = document.createElement('div');
+
+        componentElement.className = `draggable-component component-${component.type}`;
+        componentElement.dataset.componentId = component.id;
+        componentElement.style.left = component.x + 'px';
+        componentElement.style.top = component.y + 'px';
+        componentElement.style.width = component.width + 'px';
+        componentElement.style.height = component.height + 'px';
+        componentElement.style.color = component.textColor;
+
+        // Set content based on type
+        if (component.type === 'image' && component.imagePath) {
+            componentElement.style.backgroundImage = `url(${component.imagePath})`;
+            componentElement.style.backgroundSize = 'cover';
+            componentElement.style.backgroundPosition = 'center';
+        } else {
+            componentElement.textContent = component.text || this.getDefaultText(component.type);
+        }
+
+        // Add event listeners
+        componentElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectComponent(componentElement);
+        });
+
+        // Add drag functionality
+        componentElement.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('component-resize-handle')) return;
+            this.startComponentDrag(e, componentElement);
+        });
+
+        mobileScreen.appendChild(componentElement);
+    }
+
+    startComponentDrag(e, component) {
+        e.preventDefault();
+        this.isComponentDragging = true;
+
+        const rect = component.getBoundingClientRect();
+        const screenRect = document.getElementById('screenArea').getBoundingClientRect();
+
+        this.dragOffset = {
+            x: e.clientX - rect.left + screenRect.left,
+            y: e.clientY - rect.top + screenRect.top
+        };
+
+        const handleMouseMove = (e) => {
+            if (!this.isComponentDragging) return;
+
+            const screenRect = document.getElementById('screenArea').getBoundingClientRect();
+            let newX = e.clientX - this.dragOffset.x;
+            let newY = e.clientY - this.dragOffset.y;
+
+            // Constrain to screen bounds
+            newX = Math.max(0, Math.min(screenRect.width - component.offsetWidth, newX));
+            newY = Math.max(0, Math.min(screenRect.height - component.offsetHeight, newY));
+
+            component.style.left = newX + 'px';
+            component.style.top = newY + 'px';
+        };
+
+        const handleMouseUp = () => {
+            this.isComponentDragging = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+
+            // Update component data and property form
+            this.updateComponentData();
+            this.updatePropertyFormFromComponent();
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    getDefaultText(type) {
+        const defaults = {
+            button: 'Button',
+            textbox: 'Text Input',
+            textarea: 'Text Area',
+            checkbox: 'Checkbox',
+            radio: 'Radio Button',
+            image: 'Image'
+        };
+        return defaults[type] || 'Component';
+    }
+
+    getDefaultPlaceholder(type) {
+        const defaults = {
+            textbox: 'Enter text...',
+            textarea: 'Enter text here...'
+        };
+        return defaults[type] || '';
+    }
+
+    // Page Navigation Warning for unsaved changes
+    setupPageNavigationWarning() {
+        let hasUnsavedChanges = false;
+
+        // Track changes to components
+        const trackChanges = () => {
+            hasUnsavedChanges = true;
+        };
+
+        // Reset changes flag when screen is saved
+        const resetChanges = () => {
+            hasUnsavedChanges = false;
+        };
+
+        // Store original methods first
+        this.originalAddComponent = this.addComponent;
+        this.originalSaveScreen = this.saveScreen;
+
+        // Add change tracking to component modifications
+        this.addComponent = function (type, x, y) {
+            const component = this.originalAddComponent.call(this, type, x, y);
+            trackChanges();
+            return component;
+        };
+
+        // Override save screen to reset changes flag
+        this.saveScreen = async function () {
+            const result = await this.originalSaveScreen();
+            if (result) {
+                resetChanges();
+            }
+            return result;
+        };
+
+        // Add beforeunload event listener
+        window.addEventListener('beforeunload', (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        // Track changes when components are modified
+        const originalUpdateComponentProperty = this.updateComponentProperty;
+        this.updateComponentProperty = function (property, value) {
+            originalUpdateComponentProperty.call(this, property, value);
+            trackChanges();
+        };
+
+        // Track changes when components are deleted
+        const originalDeleteSelectedComponent = this.deleteSelectedComponent;
+        this.deleteSelectedComponent = function () {
+            originalDeleteSelectedComponent.call(this);
+            trackChanges();
+        };
+
+        // Track changes when screen background is modified
+        const originalUpdateScreenBackground = this.updateScreenBackground;
+        this.updateScreenBackground = function () {
+            originalUpdateScreenBackground.call(this);
+            trackChanges();
+        };
+    }
+
+    // Logout Confirmation
+    setupLogoutConfirmation() {
+        const logoutLink = document.querySelector('a[href="/logout"]');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Logout Confirmation',
+                    text: 'Are you sure you want to logout?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#007bff',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Logout',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Submit logout form
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '/logout';
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            });
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {

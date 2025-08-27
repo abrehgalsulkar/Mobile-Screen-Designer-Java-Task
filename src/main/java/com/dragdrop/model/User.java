@@ -20,21 +20,27 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
     
+    @Column(unique = true, nullable = false)
+    private String email;
+    
+    @Column(name = "contact_number")
+    private String contactNumber;
+    
     @Column(nullable = false)
     private String password;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
-    // Default constructor
     public User() {
         this.createdAt = LocalDateTime.now();
     }
     
-    // Constructor with username and password
-    public User(String username, String password) {
+    public User(String username, String email, String contactNumber, String password) {
         this();
         this.username = username;
+        this.email = email;
+        this.contactNumber = contactNumber;
         this.password = password;
     }
     
@@ -53,6 +59,22 @@ public class User {
     
     public void setUsername(String username) {
         this.username = username;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
+    public String getContactNumber() {
+        return contactNumber;
+    }
+    
+    public void setContactNumber(String contactNumber) {
+        this.contactNumber = contactNumber;
     }
     
     public String getPassword() {
