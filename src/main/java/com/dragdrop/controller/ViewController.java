@@ -38,7 +38,7 @@ public class ViewController {
         try {
             model.addAttribute("application", applicationService.getApplicationById(applicationId));
             model.addAttribute("screens", screenService.getAllScreensByApplication(applicationId));
-            //default screen for new design
+            //add default/blankk screen for new design
             model.addAttribute("screen", new com.dragdrop.model.Screen());
         } catch (Exception e) {
             return "redirect:/";

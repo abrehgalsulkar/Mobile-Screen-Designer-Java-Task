@@ -7,9 +7,10 @@
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Mobile Screen Designer - ${application.name}</title>
-            <link rel="stylesheet" href="/css/style.css">
-            <link rel="stylesheet" href="/css/designer.css">
+            <link rel="stylesheet" href="/css/style.css?v=3">
+            <link rel="stylesheet" href="/css/designer.css?v=3">
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
         </head>
 
         <body>
@@ -54,7 +55,7 @@
                         </div>
                         <div class="component-item" draggable="true" data-type="textarea">
                             <span class="component-icon">📄</span>
-                            <span>Textarea</span>
+                            <span>Text Area</span>
                         </div>
                         <div class="component-item" draggable="true" data-type="checkbox">
                             <span class="component-icon">☑️</span>
@@ -94,7 +95,7 @@
                 <div class="property-editor">
                     <h3>Properties</h3>
 
-                    <div class="screen-background-section">
+                    <div class="screen-background-section" id="screenBackgroundSection" style="display: none;">
                         <h4>Screen Background</h4>
                         <div class="background-options">
                             <div class="background-color-option">
@@ -106,6 +107,9 @@
                                 <input type="file" id="screenBackgroundImage" accept="image/*">
                                 <div class="background-preview" id="backgroundPreview">
                                     <span>No image selected</span>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary btn-small" id="clearBackgroundImageBtn">Clear Image</button>
                                 </div>
                             </div>
                         </div>
@@ -132,14 +136,7 @@
                             <label for="componentHeight">Height:</label>
                             <input type="number" id="componentHeight" min="20" max="667">
                         </div>
-                        <div class="form-group">
-                            <label for="componentText">Text/Label:</label>
-                            <input type="text" id="componentText">
-                        </div>
-                        <div class="form-group">
-                            <label for="componentPlaceholder">Placeholder:</label>
-                            <input type="text" id="componentPlaceholder">
-                        </div>
+                        
                         <div class="form-group">
                             <label for="componentTextColor">Text Color:</label>
                             <input type="color" id="componentTextColor" value="#000000">
@@ -183,10 +180,10 @@
             <div id="newScreenModal" class="modal" style="display: none;">
                 <div class="modal-content">
                     <h3>Create New Screen</h3>
-                    <form id="newScreenForm">
+                    <form id="newScreenForm" data-parsley-validate>
                         <div class="form-group">
                             <label for="screenName">Screen Name:</label>
-                            <input type="text" id="screenName" required>
+                            <input type="text" id="screenName" required data-parsley-required="true" data-parsley-minlength="2" data-parsley-trigger="blur" placeholder="Enter a screen name">
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Create</button>
@@ -217,7 +214,7 @@
                     };
                 </c:if>
             </script>
-            <script src="/js/designer.js"></script>
+            <script src="/js/designer.js?v=3"></script>
         </body>
 
         </html>

@@ -49,12 +49,4 @@ public class UserService implements UserDetailsService {
     public User findByUsername(String username) {
         return userRepository.findByUsernameIgnoreCase(username).orElse(null);
     }
-    
-    // public boolean existsByUsername(String username) {
-    //     return userRepository.existsByUsernameIgnoreCase(username);
-    // }
-    
-    // public boolean existsByEmail(String email) {
-    //     return userRepository.existsByEmailIgnoreCase(email);
-    // }
 }

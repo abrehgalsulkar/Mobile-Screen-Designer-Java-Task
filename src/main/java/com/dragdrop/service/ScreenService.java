@@ -27,8 +27,11 @@ public class ScreenService {
         
         Screen screen = new Screen(applicationId, name, layoutJson);
         screen.setScreenImagePath(screenImagePath);
-        
-        return screenRepository.save(screen);
+
+        Screen saved = screenRepository.save(screen);
+        // update updatedAt here for PARENT APPLICATION SERVICE
+        applicationService.touchUpdatedAt(applicationId);
+        return saved;
     }
     
     public List<Screen> getAllScreensByApplication(Long applicationId) {
@@ -53,20 +56,17 @@ public class ScreenService {
         screen.setName(name);
         screen.setLayoutJson(layoutJson);
         screen.setScreenImagePath(screenImagePath);
-        
-        return screenRepository.save(screen);
+
+        Screen saved = screenRepository.save(screen);
+        applicationService.touchUpdatedAt(screen.getApplicationId());
+        return saved;
     }
     
     public void deleteScreen(Long id) {
-        if (!screenRepository.existsById(id)) {
-            throw new RuntimeException("Screen not found with ID: " + id);
-        }
+        Screen screen = getScreenById(id);
         screenRepository.deleteById(id);
+        applicationService.touchUpdatedAt(screen.getApplicationId());
     }
     
-    public Screen updateScreenLayout(Long id, String layoutJson) {
-        Screen screen = getScreenById(id);
-        screen.setLayoutJson(layoutJson);
-        return screenRepository.save(screen);
-    }
+    
 }

@@ -26,7 +26,7 @@ You can use these credntials to login:
 
 1. Update database connection in `src/main/resources/application.properties`:
    ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/mobile_designer_db
+   spring.datasource.url=jdbc:postgresql://localhost:5433/mobile_designer_db
    spring.datasource.username=your_username
    spring.datasource.password=your_password
    ```

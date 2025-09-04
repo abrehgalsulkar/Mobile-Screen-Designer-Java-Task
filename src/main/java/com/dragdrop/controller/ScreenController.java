@@ -27,7 +27,7 @@ public class ScreenController {
     private ScreenService screenService;
     
     @PostMapping
-    public ResponseEntity<Screen> createScreen(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> createScreen(@RequestBody Map<String, Object> request) {
         try {
             Long applicationId = Long.valueOf(request.get("applicationId").toString());
             String name = (String) request.get("name");
@@ -35,13 +35,13 @@ public class ScreenController {
             String screenImagePath = (String) request.get("screenImagePath");
             
             if (name == null || name.trim().isEmpty() || layoutJson == null) {
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body("Screen name required");
             }
             
             Screen screen = screenService.createScreen(applicationId, name, layoutJson, screenImagePath);
             return ResponseEntity.ok(screen);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     
@@ -66,7 +66,7 @@ public class ScreenController {
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Screen> updateScreen(@PathVariable Long id, 
+    public ResponseEntity<?> updateScreen(@PathVariable Long id, 
                                              @RequestBody Map<String, Object> request) {
         try {
             String name = (String) request.get("name");
@@ -74,32 +74,17 @@ public class ScreenController {
             String screenImagePath = (String) request.get("screenImagePath");
             
             if (name == null || name.trim().isEmpty() || layoutJson == null) {
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body("Screen name required");
             }
             
             Screen screen = screenService.updateScreen(id, name, layoutJson, screenImagePath);
             return ResponseEntity.ok(screen);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     
-    @PutMapping("/{id}/layout")
-    public ResponseEntity<Screen> updateScreenLayout(@PathVariable Long id, 
-                                                   @RequestBody Map<String, String> request) {
-        try {
-            String layoutJson = request.get("layoutJson");
-            
-            if (layoutJson == null) {
-                return ResponseEntity.badRequest().build();
-            }
-            
-            Screen screen = screenService.updateScreenLayout(id, layoutJson);
-            return ResponseEntity.ok(screen);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
+    
     
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteScreen(@PathVariable Long id) {

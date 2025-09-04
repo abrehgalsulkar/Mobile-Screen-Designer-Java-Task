@@ -49,15 +49,51 @@ public class AuthController {
                           @RequestParam String password,
                           @RequestParam String confirmPassword,
                           RedirectAttributes redirectAttributes) {
-        
-        // Basic validation
+        redirectAttributes.addFlashAttribute("username", username);
+        redirectAttributes.addFlashAttribute("email", email);
+        redirectAttributes.addFlashAttribute("contactNumber", contactNumber);
+
+        // input validations
+        String trimmedUsername = username == null ? "" : username.trim();
+        String trimmedEmail = email == null ? "" : email.trim();
+        String trimmedContact = contactNumber == null ? "" : contactNumber.trim();
+
+        if (trimmedUsername.length() < 3) {
+            redirectAttributes.addFlashAttribute("error", "Username must be at least 3 characters long");
+            return "redirect:/register";
+        }
+
         if (!password.equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute("error", "Passwords do not match");
             return "redirect:/register";
         }
-        
+
+        if (password == null || password.length() < 6) {
+            redirectAttributes.addFlashAttribute("error", "Password must be at least 6 characters long");
+            return "redirect:/register";
+        }
+
+        // Must contain letters, numbers and at least one special character
+        java.util.regex.Pattern pwdPattern = java.util.regex.Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*?&]).{6,}$");
+        if (!pwdPattern.matcher(password).matches()) {
+            redirectAttributes.addFlashAttribute("error", "Password must contain letters, numbers, and at least one special character");
+            return "redirect:/register";
+        }
+
+        if (!trimmedContact.isEmpty()) {
+            if (!trimmedContact.matches("^[0-9]{10,15}$")) {
+                redirectAttributes.addFlashAttribute("error", "Contact Number must be digits only (10-15 digits)");
+                return "redirect:/register";
+            }
+        }
+
+        if (!trimmedEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            redirectAttributes.addFlashAttribute("error", "Please enter a valid email address");
+            return "redirect:/register";
+        }
+
         try {
-            userService.createUser(username, email, contactNumber, password);
+            userService.createUser(trimmedUsername, trimmedEmail, trimmedContact, password);
             return "redirect:/login?registered";
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());

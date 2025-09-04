@@ -104,34 +104,43 @@
                     <div class="form-group">
                         <label for="username">Username:</label>
                         <input type="text" id="username" name="username" required data-parsley-required="true"
-                            data-parsley-minlength="3" data-parsley-trigger="blur">
+                            data-parsley-minlength="3" data-parsley-trigger="blur" value="${username}">
                         <div class="requirements">Minimum 3 characters</div>
                     </div>
 
                     <div class="form-group">
                         <label for="email">Email:</label>
                         <input type="email" id="email" name="email" required data-parsley-required="true"
-                            data-parsley-type="email" data-parsley-trigger="blur">
+                            data-parsley-type="email" data-parsley-trigger="blur" value="${email}">
                     </div>
 
                     <div class="form-group">
                         <label for="contactNumber">Contact Number:</label>
                         <input type="tel" id="contactNumber" name="contactNumber"
-                            data-parsley-pattern="^[+]?[0-9\s\-\(\)]{10,20}$" data-parsley-trigger="blur">
-                        <div class="requirements">Optional: +1 (555) 123-4567 format</div>
+                            inputmode="numeric" pattern="^[0-9]{10,15}$"
+                            data-parsley-pattern="^[0-9]{10,15}$" data-parsley-trigger="blur"
+                            data-parsley-pattern-message="Please enter digits only (10-15 digits)" value="${contactNumber}">
+                        <div class="requirements">Optional. Digits only (10-15 characters).</div>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password:</label>
                         <input type="password" id="password" name="password" required data-parsley-required="true"
-                            data-parsley-minlength="6" data-parsley-trigger="blur">
-                        <div class="requirements">Minimum 6 characters</div>
+                            data-parsley-minlength="6"
+                            data-parsley-pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$"
+                            data-parsley-pattern-message="Must be 6+ chars with letters, numbers, and a special character"
+                            data-parsley-trigger="blur">
+                        <div class="requirements">Minimum 6 characters, includes letters, numbers, and special
+                            characters</div>
                     </div>
 
                     <div class="form-group">
                         <label for="confirmPassword">Confirm Password:</label>
                         <input type="password" id="confirmPassword" name="confirmPassword" required
-                            data-parsley-required="true" data-parsley-equalto="#password" data-parsley-trigger="blur">
+                            data-parsley-required="true" data-parsley-equalto="#password"
+                            data-parsley-pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$"
+                            data-parsley-pattern-message="Must be 6+ chars with letters, numbers, and a special character"
+                            data-parsley-trigger="blur">
                     </div>
 
                     <button type="submit" class="btn btn-primary">Register</button>
@@ -143,8 +152,12 @@
             </div>
 
             <script>
-                $(document).ready(function () {
-                    $('#registerForm').parsley();
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Initializion ParsleyJS
+                    const form = document.getElementById('registerForm');
+                    if (form) {
+                        form.setAttribute('data-parsley-validate', '');
+                    }
                 });
                 var errorMessage = '${error}';
                 if (errorMessage && errorMessage.trim() !== '') {

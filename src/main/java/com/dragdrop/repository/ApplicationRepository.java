@@ -12,7 +12,5 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     List<Application> findByUserId(Long userId);
 
-    List<Application> findByUserIdOrderByCreatedAtDesc(Long userId);
-
     boolean existsByNameAndUserId(String name, Long userId);
 }

@@ -27,67 +27,67 @@ public class ApplicationController {
     private ApplicationService applicationService;
     
     @PostMapping
-    public ResponseEntity<Application> createApplication(@RequestBody Map<String, String> request) {
+    public ResponseEntity<?> createApplication(@RequestBody Map<String, String> request) {
         try {
             String name = request.get("name");
             String iconPath = request.get("iconPath");
             
             if (name == null || name.trim().isEmpty()) {
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body("Application name is required");
             }
             
             Application application = applicationService.createApplication(name, iconPath);
             return ResponseEntity.ok(application);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     
     @GetMapping
-    public ResponseEntity<List<Application>> getAllApplications() {
+    public ResponseEntity<?> getAllApplications() {
         try {
             List<Application> applications = applicationService.getAllApplicationsByUser();
             return ResponseEntity.ok(applications);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body("Failed to load applications: " + e.getMessage());
         }
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Application> getApplicationById(@PathVariable Long id) {
+    public ResponseEntity<?> getApplicationById(@PathVariable Long id) {
         try {
             Application application = applicationService.getApplicationById(id);
             return ResponseEntity.ok(application);
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(404).body("Application not found: " + e.getMessage());
         }
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Application> updateApplication(@PathVariable Long id, 
+    public ResponseEntity<?> updateApplication(@PathVariable Long id, 
                                                       @RequestBody Map<String, String> request) {
         try {
             String name = request.get("name");
             String iconPath = request.get("iconPath");
             
             if (name == null || name.trim().isEmpty()) {
-                return ResponseEntity.badRequest().build();
+                return ResponseEntity.badRequest().body("Application name is required");
             }
             
             Application application = applicationService.updateApplication(id, name, iconPath);
             return ResponseEntity.ok(application);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteApplication(@PathVariable Long id) {
+    public ResponseEntity<?> deleteApplication(@PathVariable Long id) {
         try {
             applicationService.deleteApplication(id);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(404).body("Application not found: " + e.getMessage());
         }
     }
 }

@@ -110,6 +110,27 @@ body {
     font-size: 12px;
 }
 
+/* SweetAlert2 notifs */
+.swal2-styled.swal2-confirm {
+    background-color: #007bff !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+}
+.swal2-styled.swal2-cancel {
+    background-color: #6c757d !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+}
+.swal2-popup {
+    border-radius: 10px !important;
+}
+.swal2-title {
+    font-weight: 600 !important;
+}
+.swal2-html-container {
+    font-size: 14px !important;
+}
+
 /* Actions */
 .actions {
     text-align: center;
@@ -155,7 +176,7 @@ body {
 
 .app-info h3 {
     color: #333;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     text-align: center;
 }
 
@@ -170,6 +191,7 @@ body {
     display: flex;
     justify-content: center;
     gap: 10px;
+    margin-top: 10px;
 }
 
 /* Empty State */

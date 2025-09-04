@@ -35,39 +35,14 @@ public class FileUploadController {
             String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
             String filename = "icon_" + UUID.randomUUID().toString() + fileExtension;
 
-            // Save file
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath);
 
-            // Return the relative path for storage in database
             return ResponseEntity.ok("/uploads/" + filename);
         } catch (IOException e) {
             return ResponseEntity.badRequest().body("Failed to upload file: " + e.getMessage());
         }
     }
 
-    @PostMapping("/screen-image")
-    public ResponseEntity<String> uploadScreenImage(@RequestParam("file") MultipartFile file) {
-        try {
-            // Create upload directory if it doesn't exist
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            // Generate unique filename
-            String originalFilename = file.getOriginalFilename();
-            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            String filename = "screen_" + UUID.randomUUID().toString() + fileExtension;
-
-            // Save file
-            Path filePath = uploadPath.resolve(filename);
-            Files.copy(file.getInputStream(), filePath);
-
-            // Return the relative path for storage in database
-            return ResponseEntity.ok("/uploads/" + filename);
-        } catch (IOException e) {
-            return ResponseEntity.badRequest().body("Failed to upload file: " + e.getMessage());
-        }
-    }
+    
 }

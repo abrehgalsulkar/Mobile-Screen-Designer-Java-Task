@@ -14,18 +14,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // Close modals when clicking on X
     closeBtns.forEach(closeBtn => {
         closeBtn.addEventListener('click', function () {
-            createAppModal.style.display = 'none';
-            editAppModal.style.display = 'none';
+            if (createAppModal.style.display === 'block') {
+                closeModal();
+            }
+            if (editAppModal.style.display === 'block') {
+                closeEditModal();
+            }
         });
     });
 
-    // Close modals when clicking outside   
+    // Close modals when clicking outside and reset forms
     window.addEventListener('click', function (event) {
         if (event.target === createAppModal) {
-            createAppModal.style.display = 'none';
+            closeModal();
         }
         if (event.target === editAppModal) {
-            editAppModal.style.display = 'none';
+            closeEditModal();
         }
     });
 
@@ -55,13 +59,70 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
     setupIconPreviews();
+    setupParsleyValidation();
 });
+
+// ParsleyJS validation
+function setupParsleyValidation() {
+    const createForm = document.getElementById('createAppForm');
+    const editForm = document.getElementById('editAppForm');
+
+    if (createForm) {
+        createForm.setAttribute('data-parsley-validate', '');
+    }
+
+    if (editForm) {
+        editForm.setAttribute('data-parsley-validate', '');
+    }
+}
+
+// Check if application name already exists
+async function applicationNameExists(appName) {
+    try {
+        const response = await fetch('/api/applications');
+        if (response.ok) {
+            const applications = await response.json();
+            return applications.some(app => app.name.toLowerCase() === appName.toLowerCase());
+        }
+    } catch (error) {
+        console.error('Error checking application names:', error);
+    }
+    return false;
+}
+
+async function applicationNameExistsForUpdate(appName, currentAppId) {
+    try {
+        const response = await fetch('/api/applications');
+        if (response.ok) {
+            const applications = await response.json();
+            return applications.some(app =>
+                app.name.toLowerCase() === appName.toLowerCase() &&
+                app.id.toString() !== currentAppId.toString()
+            );
+        }
+    } catch (error) {
+        console.error('Error checking application names:', error);
+    }
+    return false;
+}
 
 // Create new application
 async function createApplication() {
     try {
         const formData = new FormData(document.getElementById('createAppForm'));
+        const appName = formData.get('name');
         const iconFile = formData.get('icon');
+
+        // Check if application name already exists
+        if (await applicationNameExists(appName)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Application Name Exists',
+                text: 'An application with this name already exists. Please choose a different name.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
 
         let iconPath = null;
 
@@ -142,7 +203,6 @@ async function deleteApplication(appId) {
 
         if (response.ok) {
             showNotification('Application deleted successfully!', 'success');
-            // Remove the app card from DOM
             const appCard = document.querySelector(`[data-app-id="${appId}"]`);
             if (appCard) {
                 appCard.remove();
@@ -191,7 +251,18 @@ async function updateApplication() {
     try {
         const formData = new FormData(document.getElementById('editAppForm'));
         const appId = formData.get('id');
+        const appName = formData.get('name');
         const iconFile = formData.get('icon');
+
+        if (await applicationNameExistsForUpdate(appName, appId)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Application Name Exists',
+                text: 'An application with this name already exists. Please choose a different name.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
 
         let iconPath = null;
 
@@ -250,12 +321,16 @@ async function updateApplication() {
 function closeModal() {
     document.getElementById('createAppModal').style.display = 'none';
     document.getElementById('createAppForm').reset();
+    document.getElementById('iconPreview').style.display = 'none';
+    document.getElementById('iconPreviewImg').src = '';
 }
 
 function closeEditModal() {
     document.getElementById('editAppModal').style.display = 'none';
     document.getElementById('editAppForm').reset();
     document.getElementById('currentIconPreview').innerHTML = '';
+    document.getElementById('editIconPreview').style.display = 'none';
+    document.getElementById('editIconPreviewImg').src = '';
 }
 
 function showNotification(message, type) {
@@ -277,12 +352,12 @@ function setupIconPreviews() {
         createIconInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
-                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml'];
                 if (!allowedTypes.includes(file.type)) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Invalid File Type',
-                        text: 'Please select only PNG, JPG, JPEG, or GIF files.',
+                        text: 'Please select only PNG, JPG, JPEG, GIF, or SVG files.',
                         confirmButtonText: 'OK'
                     });
                     e.target.value = '';
@@ -309,12 +384,12 @@ function setupIconPreviews() {
         editIconInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
-                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml'];
                 if (!allowedTypes.includes(file.type)) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Invalid File Type',
-                        text: 'Please select only PNG, JPG, JPEG, or GIF files.',
+                        text: 'Please select only PNG, JPG, JPEG, GIF, or SVG files.',
                         confirmButtonText: 'OK'
                     });
                     e.target.value = '';

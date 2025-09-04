@@ -43,6 +43,7 @@ public class ApplicationService {
         
         Application application = new Application(name, userId);
         application.setIconPath(iconPath);
+        application.setUpdatedAt(java.time.LocalDateTime.now());
         
         return applicationRepository.save(application);
     }
@@ -79,6 +80,7 @@ public class ApplicationService {
         if (iconPath != null && !iconPath.trim().isEmpty()) {
             application.setIconPath(iconPath);
         }
+        application.setUpdatedAt(java.time.LocalDateTime.now());
         
         return applicationRepository.save(application);
     }
@@ -95,5 +97,12 @@ public class ApplicationService {
         applicationRepository.deleteById(id);
     }
     
+    // Update updatedAt timestamp
+    public void touchUpdatedAt(Long applicationId) {
+        Application app = getApplicationById(applicationId);
+        app.setUpdatedAt(java.time.LocalDateTime.now());
+        applicationRepository.save(app);
+    }
+
 
 }

@@ -8,6 +8,8 @@
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Mobile Screen Designer - Home</title>
             <link rel="stylesheet" href="/css/style.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         </head>
 
@@ -42,7 +44,7 @@
                             </div>
                             <div class="app-info">
                                 <h3>${app.name}</h3>
-                                <p>Created: ${app.createdAt}</p>
+                                <p>Updated: <span class="app-updated" data-updated="${app.updatedAt}" data-created="${app.createdAt}">${app.updatedAt}</span></p>
                             </div>
                             <div class="app-actions">
                                 <button class="btn btn-secondary open-app" data-app-id="${app.id}">Open</button>
@@ -68,12 +70,13 @@
                     <form id="createAppForm" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="appName">Application Name:</label>
-                            <input type="text" id="appName" name="name" required>
+                            <input type="text" id="appName" name="name" required data-parsley-required="true"
+                                data-parsley-minlength="3" data-parsley-trigger="blur">
                         </div>
                         <div class="form-group">
                             <label for="appIcon">Application Icon:</label>
-                            <input type="file" id="appIcon" name="icon" accept=".png,.jpg,.jpeg,.gif">
-                            <small>Upload an icon image (PNG, JPG, GIF only)</small>
+                            <input type="file" id="appIcon" name="icon" accept=".png,.jpg,.jpeg,.gif,.svg">
+                            <small>Upload an icon image (PNG, JPG, GIF, SVG only)</small>
                             <div id="iconPreview" class="icon-preview" style="display: none;">
                                 <img id="iconPreviewImg" src="" alt="Icon Preview"
                                     style="max-width: 100px; max-height: 100px; margin-top: 10px;">
@@ -96,12 +99,13 @@
                         <input type="hidden" id="editAppId" name="id">
                         <div class="form-group">
                             <label for="editAppName">Application Name:</label>
-                            <input type="text" id="editAppName" name="name" required>
+                            <input type="text" id="editAppName" name="name" required data-parsley-required="true"
+                                data-parsley-minlength="3" data-parsley-trigger="blur">
                         </div>
                         <div class="form-group">
                             <label for="editAppIcon">Application Icon:</label>
-                            <input type="file" id="editAppIcon" name="icon" accept=".png,.jpg,.jpeg,.gif">
-                            <small>Upload a new icon image (PNG, JPG, GIF only)</small>
+                            <input type="file" id="editAppIcon" name="icon" accept=".png,.jpg,.jpeg,.gif,.svg">
+                            <small>Upload a new icon image (PNG, JPG, GIF, SVG only)</small>
                             <div id="currentIconPreview" class="current-icon-preview"></div>
                             <div id="editIconPreview" class="icon-preview" style="display: none;">
                                 <img id="editIconPreviewImg" src="" alt="Icon Preview"
@@ -117,6 +121,22 @@
             </div>
 
             <script src="/js/home.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.querySelectorAll('.app-updated').forEach(function (el) {
+                        var updatedTs = el.getAttribute('data-updated');
+                        var createdTs = el.getAttribute('data-created');
+                        var fmt = function(v){ return moment(v).format('MMM D, YYYY, HH:mm'); };
+                        var text = '';
+                        if (updatedTs && moment(updatedTs).isValid()) {
+                            text = fmt(updatedTs);
+                        } else if (createdTs && moment(createdTs).isValid()) {
+                            text = fmt(createdTs);
+                        }
+                        if (text) el.textContent = text;
+                    });
+                });
+            </script>
 
             <script>
                 document.addEventListener('DOMContentLoaded', function () {

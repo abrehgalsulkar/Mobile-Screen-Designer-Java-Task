@@ -34,21 +34,24 @@ public class Application {
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Screen> screens;
     
-    // Default constructor
     public Application() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
     }
     
-    // Constructor with required fields
     public Application(String name, Long userId) {
         this.name = name;
         this.userId = userId;
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
     }
     
     // Getters and Setters
@@ -90,6 +93,14 @@ public class Application {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
     
     public List<Screen> getScreens() {

@@ -1,4 +1,3 @@
-// Mobile Screen Designer functionality
 class ScreenDesigner {
     constructor() {
         this.components = [];
@@ -14,6 +13,8 @@ class ScreenDesigner {
         this.screenResizeStartHeight = 0;
         this.screenBackgroundColor = '#ffffff';
         this.screenBackgroundImage = null;
+        // disable applying image to screen, only show preview
+        this.applyBackgroundToScreen = false;
 
         this.isComponentDragging = false;
         this.isComponentResizing = false;
@@ -32,6 +33,42 @@ class ScreenDesigner {
         this.setupScreenResizing();
         this.setupScreenBackground();
         this.setupContextMenu();
+        this.hideBackgroundControls();
+
+        this.ensureBackgroundLayer();
+    }
+
+    ensureBackgroundLayer() {
+        const screenArea = document.getElementById('screenArea');
+        if (!screenArea) return;
+        screenArea.style.position = screenArea.style.position || 'relative';
+        screenArea.style.overflow = screenArea.style.overflow || 'hidden';
+        let layer = screenArea.querySelector('.screen-bg-layer');
+        if (!layer) {
+            layer = document.createElement('div');
+            layer.className = 'screen-bg-layer';
+            screenArea.insertBefore(layer, screenArea.firstChild);
+        }
+        this.bgLayer = layer;
+
+        let img = screenArea.querySelector('.screen-bg-img');
+        if (!img) {
+            img = document.createElement('img');
+            img.className = 'screen-bg-img';
+            img.alt = '';
+            img.style.position = 'absolute';
+            img.style.top = '0';
+            img.style.left = '0';
+            img.style.right = '0';
+            img.style.bottom = '0';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            img.style.pointerEvents = 'none';
+            img.style.zIndex = '0';
+            screenArea.insertBefore(img, screenArea.firstChild);
+        }
+        this.bgImg = img;
     }
 
     setupEventListeners() {
@@ -62,7 +99,6 @@ class ScreenDesigner {
             this.closeNewScreenModal();
         });
 
-        // check if screen name is already taken
         document.getElementById('screenName').addEventListener('input', (e) => {
             this.validateScreenName(e.target.value);
         });
@@ -73,7 +109,7 @@ class ScreenDesigner {
     }
 
     setupPropertyFormListeners() {
-        const inputs = ['componentX', 'componentY', 'componentWidth', 'componentHeight', 'componentText', 'componentPlaceholder', 'componentTextColor', 'componentZIndex'];
+        const inputs = ['componentX', 'componentY', 'componentWidth', 'componentHeight', 'componentTextColor'];
         inputs.forEach(id => {
             const input = document.getElementById(id);
             if (input) {
@@ -145,66 +181,7 @@ class ScreenDesigner {
         });
     }
 
-    addComponent(type, x, y) {
-        const component = {
-            id: this.generateId(),
-            type: type,
-            x: Math.max(0, Math.min(x, 375 - 100)),
-            y: Math.max(0, Math.min(y, 667 - 50)),
-            width: 100,
-            height: 50,
-            text: this.getDefaultText(type),
-            placeholder: '',
-            textColor: '#000000',
-            checked: false,
-            imagePath: '',
-            zIndex: this.components.length
-        };
-
-        this.components.push(component);
-        this.renderComponent(component);
-        this.selectComponent(component);
-    }
-
-    getDefaultText(type) {
-        const defaults = {
-            button: 'Button',
-            textbox: '',
-            textarea: '',
-            checkbox: 'Checkbox',
-            radio: 'Radio',
-            image: 'Image'
-        };
-        return defaults[type] || '';
-    }
-
-    renderComponent(component) {
-        const mobileScreen = document.getElementById('screenArea');
-
-        const element = document.createElement('div');
-        element.className = `draggable-component component-${component.type}`;
-        element.dataset.componentId = component.id;
-        element.style.cssText = `
-            left: ${component.x}px;
-            top: ${component.y}px;
-            width: ${component.width}px;
-            height: ${component.height}px;
-            z-index: ${component.zIndex};
-        `;
-
-        this.setComponentContent(element, component);
-
-        element.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.selectComponent(component);
-        });
-
-        this.makeComponentDraggable(element, component);
-
-        this.addResizeHandles(element, component);
-
-        mobileScreen.appendChild(element);
-    }
+    
 
     setComponentContent(element, component) {
         switch (component.type) {
@@ -212,16 +189,16 @@ class ScreenDesigner {
                 element.textContent = component.text;
                 break;
             case 'textbox':
-                element.innerHTML = `<input type="text" placeholder="${component.placeholder}" value="${component.text}" style="width: 100%; height: 100%; border: none; outline: none;">`;
+                element.innerHTML = `<input type="text" placeholder="${component.placeholder}" value="${component.text}" style="width: 100%; height: 100%; border: none; outline: none; pointer-events: none;" readonly disabled>`;
                 break;
             case 'textarea':
-                element.innerHTML = `<textarea placeholder="${component.placeholder}" style="width: 100%; height: 100%; border: none; outline: none; resize: none;">${component.text}</textarea>`;
+                element.innerHTML = `<textarea placeholder="${component.placeholder}" style="width: 100%; height: 100%; border: none; outline: none; resize: none; pointer-events: none;" readonly disabled>${component.text}</textarea>`;
                 break;
             case 'checkbox':
-                element.innerHTML = `<input type="checkbox" ${component.checked ? 'checked' : ''} style="margin-right: 8px;"><span>${component.text}</span>`;
+                element.innerHTML = `<input type="checkbox" ${component.checked ? 'checked' : ''} disabled style="margin-right: 8px; pointer-events: none;"><span>${component.text}</span>`;
                 break;
             case 'radio':
-                element.innerHTML = `<input type="radio" ${component.checked ? 'checked' : ''} style="margin-right: 8px;"><span>${component.text}</span>`;
+                element.innerHTML = `<input type="radio" ${component.checked ? 'checked' : ''} disabled style="margin-right: 8px; pointer-events: none;"><span>${component.text}</span>`;
                 break;
             case 'image':
                 if (component.imagePath) {
@@ -233,123 +210,7 @@ class ScreenDesigner {
         }
     }
 
-    makeComponentDraggable(element, component) {
-        element.addEventListener('mousedown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                return;
-            }
-
-            this.isDragging = true;
-            this.selectedComponent = component;
-            this.dragOffset.x = e.clientX - component.x;
-            this.dragOffset.y = e.clientY - component.y;
-
-            document.addEventListener('mousemove', this.handleMouseMove.bind(this));
-            document.addEventListener('mouseup', this.handleMouseUp.bind(this));
-        });
-    }
-
-    addResizeHandles(element, component) {
-        const handles = ['nw', 'ne', 'sw', 'se'];
-        handles.forEach(pos => {
-            const handle = document.createElement('div');
-            handle.className = `resize-handle ${pos}`;
-            element.appendChild(handle);
-
-            handle.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                this.isResizing = true;
-                this.resizeHandle = pos;
-                this.selectedComponent = component;
-
-                document.addEventListener('mousemove', this.handleResizeMove.bind(this));
-                document.addEventListener('mouseup', this.handleResizeUp.bind(this));
-            });
-        });
-    }
-
-    handleMouseMove(e) {
-        if (!this.isDragging || !this.selectedComponent) return;
-
-        const mobileScreen = document.getElementById('screenArea');
-        const rect = mobileScreen.getBoundingClientRect();
-
-        let newX = e.clientX - rect.left - this.dragOffset.x;
-        let newY = e.clientY - rect.top - this.dragOffset.y;
-
-        newX = Math.max(0, Math.min(newX, 375 - this.selectedComponent.width));
-        newY = Math.max(0, Math.min(newY, 667 - this.selectedComponent.height));
-
-        this.selectedComponent.x = newX;
-        this.selectedComponent.y = newY;
-
-        const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
-        if (element) {
-            element.style.left = newX + 'px';
-            element.style.top = newY + 'px';
-        }
-
-        this.updatePropertyForm();
-    }
-
-    handleMouseUp() {
-        this.isDragging = false;
-        document.removeEventListener('mousemove', this.handleMouseMove);
-        document.removeEventListener('mouseup', this.handleMouseUp);
-    }
-
-    handleResizeMove(e) {
-        if (!this.isResizing || !this.selectedComponent) return;
-
-        const mobileScreen = document.getElementById('screenArea');
-        const rect = mobileScreen.getBoundingClientRect();
-        const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
-
-        if (!element) return;
-
-        let newWidth = this.selectedComponent.width;
-        let newHeight = this.selectedComponent.height;
-
-        if (this.resizeHandle.includes('e')) {
-            newWidth = Math.max(50, e.clientX - rect.left - this.selectedComponent.x);
-        }
-        if (this.resizeHandle.includes('w')) {
-            const rightEdge = this.selectedComponent.x + this.selectedComponent.width;
-            newWidth = Math.max(50, rightEdge - (e.clientX - rect.left));
-            if (newWidth !== this.selectedComponent.width) {
-                this.selectedComponent.x = e.clientX - rect.left;
-            }
-        }
-        if (this.resizeHandle.includes('s')) {
-            newHeight = Math.max(30, e.clientY - rect.top - this.selectedComponent.y);
-        }
-        if (this.resizeHandle.includes('n')) {
-            const bottomEdge = this.selectedComponent.y + this.selectedComponent.height;
-            newHeight = Math.max(30, bottomEdge - (e.clientY - rect.top));
-            if (newHeight !== this.selectedComponent.height) {
-                this.selectedComponent.y = e.clientY - rect.top;
-            }
-        }
-
-        newWidth = Math.min(newWidth, 375 - this.selectedComponent.x);
-        newHeight = Math.min(newHeight, 667 - this.selectedComponent.y);
-
-        this.selectedComponent.width = newWidth;
-        this.selectedComponent.height = newHeight;
-
-        element.style.width = newWidth + 'px';
-        element.style.height = newHeight + 'px';
-        element.style.left = this.selectedComponent.x + 'px';
-        element.style.top = this.selectedComponent.y + 'px';
-
-        this.updatePropertyForm();
-    }
-
-    handleResizeUp() {
-        this.isResizing = false;
-        document.removeEventListener('mousemove', this.handleResizeMove);
-        document.removeEventListener('mouseup', this.handleResizeUp);
-    }
+    
 
     updatePropertyForm() {
         if (this.selectedComponent) {
@@ -360,17 +221,11 @@ class ScreenDesigner {
         }
     }
 
-    selectComponent(component) {
-        this.deselectComponent();
-        this.selectedComponent = component;
-
-        const element = document.querySelector(`[data-component-id="${component.id}"]`);
-        if (element) {
-            element.classList.add('selected');
-        }
-
-        this.showPropertyForm(component);
+    markUnsaved() {
+        this.hasUnsavedChanges = true;
     }
+
+    
 
     deselectComponent() {
         if (this.selectedComponent) {
@@ -382,11 +237,13 @@ class ScreenDesigner {
         }
 
         this.hidePropertyForm();
+        this.showBackgroundControls();
     }
 
     showPropertyForm(component) {
         document.querySelector('.no-selection').style.display = 'none';
         document.getElementById('propertyForm').style.display = 'block';
+        this.hideBackgroundControls();
 
 
         document.getElementById('componentType').value = component.type.charAt(0).toUpperCase() + component.type.slice(1);
@@ -394,10 +251,7 @@ class ScreenDesigner {
         document.getElementById('componentY').value = component.y;
         document.getElementById('componentWidth').value = component.width;
         document.getElementById('componentHeight').value = component.height;
-        document.getElementById('componentText').value = component.text;
-        document.getElementById('componentPlaceholder').value = component.placeholder;
         document.getElementById('componentTextColor').value = component.textColor;
-        document.getElementById('componentZIndex').value = component.zIndex;
 
         const checkboxGroup = document.querySelector('.checkbox-group');
         if (component.type === 'checkbox' || component.type === 'radio') {
@@ -416,8 +270,10 @@ class ScreenDesigner {
     }
 
     hidePropertyForm() {
-        document.querySelector('.no-selection').style.display = 'block';
         document.getElementById('propertyForm').style.display = 'none';
+        const noSel = document.getElementById('noSelection');
+        if (noSel) noSel.style.display = 'none';
+        this.showBackgroundControls();
     }
 
     updateComponentProperty(propertyId, value) {
@@ -445,7 +301,6 @@ class ScreenDesigner {
                     element.style.zIndex = value;
                     break;
                 case 'text':
-                case 'placeholder':
                 case 'color':
                 case 'checked':
                     this.setComponentContent(element, this.selectedComponent);
@@ -457,7 +312,18 @@ class ScreenDesigner {
     deleteSelectedComponent() {
         if (!this.selectedComponent) return;
 
-        if (confirm('Are you sure you want to delete this component?')) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Delete Component',
+            text: 'Are you sure you want to delete this component?',
+            showCancelButton: true,
+            confirmButtonText: 'Delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
             const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
             if (element) {
                 element.remove();
@@ -469,7 +335,8 @@ class ScreenDesigner {
             }
 
             this.deselectComponent();
-        }
+            this.markUnsaved();
+        });
     }
 
     bringComponentToFront() {
@@ -480,7 +347,9 @@ class ScreenDesigner {
         if (element) {
             element.style.zIndex = this.selectedComponent.zIndex;
         }
-        document.getElementById('componentZIndex').value = this.selectedComponent.zIndex;
+        const zEl = document.getElementById('componentZIndex');
+        if (zEl) zEl.value = this.selectedComponent.zIndex;
+        this.markUnsaved();
     }
 
     sendComponentToBack() {
@@ -491,7 +360,9 @@ class ScreenDesigner {
         if (element) {
             element.style.zIndex = this.selectedComponent.zIndex;
         }
-        document.getElementById('componentZIndex').value = this.selectedComponent.zIndex;
+        const zEl2 = document.getElementById('componentZIndex');
+        if (zEl2) zEl2.value = this.selectedComponent.zIndex;
+        this.markUnsaved();
     }
 
     generateId() {
@@ -510,7 +381,18 @@ class ScreenDesigner {
         }
 
         let screenName = document.getElementById('currentScreenName').textContent;
-st
+
+        // name length check
+        if (screenName && screenName !== 'New Screen' && screenName.trim().length < 2) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid Screen Name',
+                text: 'Screen name must be at least 2 characters long.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         if (!screenName || screenName === 'New Screen') {
             const result = await Swal.fire({
                 title: 'Enter Screen Name',
@@ -523,6 +405,9 @@ st
                     }
                     if (value.trim() === 'New Screen') {
                         return 'Please enter a different name';
+                    }
+                    if (value.trim().length < 2) {
+                        return 'Screen name must be at least 2 characters';
                     }
                 },
                 showCancelButton: true,
@@ -546,7 +431,13 @@ st
             }
         }
 
-        const layoutJson = JSON.stringify(this.components);
+        this.syncComponentsFromDOM();
+
+        const layoutJson = JSON.stringify({
+            components: this.components,
+            backgroundColor: this.screenBackgroundColor,
+            backgroundImage: this.screenBackgroundImage
+        });
         const screenData = {
             applicationId: window.applicationData.id,
             name: screenName,
@@ -594,6 +485,7 @@ st
                 }
 
                 this.loadScreenList();
+                return true;
             } else {
                 const errorResponse = await response.text();
                 let errorMessage = 'Error saving screen';
@@ -617,6 +509,7 @@ st
                     text: errorMessage,
                     confirmButtonText: 'OK'
                 });
+                return false;
             }
         } catch (error) {
             console.error('Error saving screen:', error);
@@ -626,98 +519,11 @@ st
                 text: 'Error saving screen: ' + error.message,
                 confirmButtonText: 'OK'
             });
+            return false;
         }
     }
 
-    async createScreen(name, layoutJson) {
-        try {
-            const response = await fetch('/api/screens', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    applicationId: window.applicationData.id,
-                    name: name,
-                    layoutJson: layoutJson,
-                    screenImagePath: null
-                })
-            });
-
-            if (response.ok) {
-                const screen = await response.json();
-                this.currentScreenId = screen.id;
-                this.updateCurrentScreenName(name);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Screen Saved!',
-                    text: 'Screen saved successfully!',
-                    confirmButtonText: 'OK',
-                    timer: 2000,
-                    timerProgressBar: true
-                });
-                this.loadScreenList();
-            } else {
-                const error = await response.text();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error Saving Screen',
-                    text: 'Error saving screen: ' + error,
-                    confirmButtonText: 'OK'
-                });
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error Saving Screen',
-                text: 'Error saving screen: ' + error.message,
-                confirmButtonText: 'OK'
-            });
-        }
-    }
-
-    async updateScreen(screenId, name, layoutJson) {
-        try {
-            const response = await fetch(`/api/screens/${screenId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: name,
-                    layoutJson: layoutJson,
-                    screenImagePath: null
-                })
-            });
-
-            if (response.ok) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Screen Updated!',
-                    text: 'Screen updated successfully!',
-                    confirmButtonText: 'OK',
-                    timer: 2000,
-                    timerProgressBar: true
-                });
-                this.loadScreenList();
-            } else {
-                const error = await response.text();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error Updating Screen',
-                    text: 'Error updating screen: ' + error,
-                    confirmButtonText: 'OK'
-                });
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error Updating Screen',
-                text: 'Error updating screen: ' + error.message,
-                confirmButtonText: 'OK'
-            });
-        }
-    }
+    
 
     async loadScreen(screenId) {
         try {
@@ -740,7 +546,27 @@ st
         this.clearComponents();
 
         try {
-            const components = JSON.parse(screen.layoutJson);
+            const parsed = JSON.parse(screen.layoutJson);
+            let components = [];
+            if (Array.isArray(parsed)) {
+                components = parsed;
+            } else if (parsed && typeof parsed === 'object') {
+                components = parsed.components || [];
+                if (parsed.backgroundColor) {
+                    this.screenBackgroundColor = parsed.backgroundColor;
+                }
+                if (parsed.backgroundImage) {
+                    this.screenBackgroundImage = parsed.backgroundImage;
+                }
+                this.updateScreenBackground();
+                this.updateBackgroundPreview();
+                // match the backg color to the same as new loaded screen
+                const colorInput = document.getElementById('screenBackgroundColor');
+                if (colorInput) {
+                    colorInput.value = this.screenBackgroundColor || '#ffffff';
+                }
+            }
+
             this.components = components;
             this.currentScreenId = screen.id;
 
@@ -753,7 +579,7 @@ st
             Swal.fire({
                 icon: 'success',
                 title: 'Screen Loaded!',
-                text: `Screen "${screen.name}" loaded successfully!`,
+                text: `Screen \"${screen.name}\" loaded successfully!`,
                 confirmButtonText: 'OK',
                 timer: 2000,
                 timerProgressBar: true
@@ -826,6 +652,16 @@ st
             return;
         }
 
+        if (screenName.length < 2) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid Screen Name',
+                text: 'Screen name must be at least 2 characters long.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         if (await this.screenNameExists(screenName)) {
             Swal.fire({
                 icon: 'warning',
@@ -836,18 +672,28 @@ st
             return;
         }
 
+        // Start from a clean slate
         this.clearComponents();
         this.currentScreenId = null;
         this.closeNewScreenModal();
 
-        this.updateCurrentScreenName(screenName);
+        // Reset background state to a blank screen
+        this.screenBackgroundColor = '#ffffff';
+        this.screenBackgroundImage = null;
+        this.updateScreenBackground();
+        this.updateBackgroundPreview();
+        const imageInput = document.getElementById('screenBackgroundImage');
+        if (imageInput) imageInput.value = '';
+        const colorInput = document.getElementById('screenBackgroundColor');
+        if (colorInput) colorInput.value = '#ffffff';
 
-        this.addComponent('button', 50, 50);
+        // Update UI name; do not auto-add any components
+        this.updateCurrentScreenName(screenName);
 
         Swal.fire({
             icon: 'success',
             title: 'New Screen Created!',
-            text: 'New screen created! Add components and save when ready.',
+            text: 'New blank screen created. Add components and save when ready.',
             confirmButtonText: 'OK',
             timer: 2000,
             timerProgressBar: true
@@ -1038,7 +884,7 @@ st
         const mobileDevice = document.querySelector('.mobile-device');
 
         screenArea.style.height = `${newHeight}px`;
-        mobileDevice.style.height = `${newHeight + 60}px`; // 60px for header + footer
+        mobileDevice.style.height = `${newHeight + 60}px`;
 
         this.updateComponentHeightConstraints(newHeight);
     }
@@ -1059,6 +905,7 @@ st
     setupScreenBackground() {
         const colorInput = document.getElementById('screenBackgroundColor');
         const imageInput = document.getElementById('screenBackgroundImage');
+        const clearBtn = document.getElementById('clearBackgroundImageBtn');
 
         if (colorInput) {
             colorInput.addEventListener('change', (e) => {
@@ -1070,6 +917,15 @@ st
         if (imageInput) {
             imageInput.addEventListener('change', (e) => {
                 this.handleBackgroundImageUpload(e.target.files[0]);
+            });
+        }
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.screenBackgroundImage = null;
+                const inputEl = document.getElementById('screenBackgroundImage');
+                if (inputEl) inputEl.value = '';
+                this.updateScreenBackground();
+                this.updateBackgroundPreview();
             });
         }
     }
@@ -1084,13 +940,16 @@ st
                 text: 'Please select an image file',
                 confirmButtonText: 'OK'
             });
+            const inputEl = document.getElementById('screenBackgroundImage');
+            if (inputEl) inputEl.value = '';
+            this.screenBackgroundImage = null;
+            this.updateBackgroundPreview();
             return;
         }
 
         const reader = new FileReader();
         reader.onload = (e) => {
             this.screenBackgroundImage = e.target.result;
-            this.updateScreenBackground();
             this.updateBackgroundPreview();
         };
         reader.readAsDataURL(file);
@@ -1099,14 +958,31 @@ st
     updateScreenBackground() {
         const screenArea = document.getElementById('screenArea');
         if (!screenArea) return;
+        this.ensureBackgroundLayer();
 
-        if (this.screenBackgroundImage) {
-            screenArea.style.background = `url(${this.screenBackgroundImage}) center/cover no-repeat`;
-            screenArea.classList.add('has-background-image');
-        } else {
-            screenArea.style.background = this.screenBackgroundColor;
-            screenArea.classList.remove('has-background-image');
+        screenArea.style.backgroundColor = this.screenBackgroundColor || '#ffffff';
+        const colorInput = document.getElementById('screenBackgroundColor');
+        if (colorInput && colorInput.value !== (this.screenBackgroundColor || '#ffffff')) {
+            colorInput.value = this.screenBackgroundColor || '#ffffff';
         }
+        if (this.bgImg) {
+            this.bgImg.removeAttribute('src');
+            this.bgImg.style.display = 'none';
+        }
+        if (this.bgLayer) {
+            this.bgLayer.style.backgroundImage = '';
+        }
+        screenArea.classList.remove('has-background-image');
+    }
+
+    showBackgroundControls() {
+        const bg = document.getElementById('screenBackgroundSection');
+        if (bg) bg.style.display = 'block';
+    }
+
+    hideBackgroundControls() {
+        const bg = document.getElementById('screenBackgroundSection');
+        if (bg) bg.style.display = 'none';
     }
 
     updateBackgroundPreview() {
@@ -1192,13 +1068,19 @@ st
 
     selectComponent(component) {
         if (this.selectedComponent) {
-            this.selectedComponent.classList.remove('selected');
+            const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
+            if (element) {
+                element.classList.remove('selected');
+            }
             this.removeResizeHandles();
         }
 
         this.selectedComponent = component;
-        component.classList.add('selected');
-        this.addResizeHandles(component);
+        const element = document.querySelector(`[data-component-id="${component.id}"]`);
+        if (element) {
+            element.classList.add('selected');
+            this.addResizeHandles(element);
+        }
         this.showPropertyForm(component);
     }
 
@@ -1219,9 +1101,12 @@ st
 
     removeResizeHandles() {
         if (this.selectedComponent) {
-            this.selectedComponent.querySelectorAll('.component-resize-handle').forEach(handle => {
-                handle.remove();
-            });
+            const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
+            if (element) {
+                element.querySelectorAll('.component-resize-handle').forEach(handle => {
+                    handle.remove();
+                });
+            }
         }
     }
 
@@ -1230,13 +1115,22 @@ st
         this.isComponentResizing = true;
         this.componentResizeHandle = position;
 
-        const rect = this.selectedComponent.getBoundingClientRect();
+        const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
+        if (!element) return;
+
+        const rect = element.getBoundingClientRect();
+        const screenRect = document.getElementById('screenArea').getBoundingClientRect();
         const startX = e.clientX;
         const startY = e.clientY;
         const startWidth = rect.width;
         const startHeight = rect.height;
-        const startLeft = rect.left;
-        const startTop = rect.top;
+        const startLeft = rect.left - screenRect.left;
+        const startTop = rect.top - screenRect.top;
+        const startRight = startLeft + startWidth;
+        const startBottom = startTop + startHeight;
+
+        const minW = 50;
+        const minH = 30;
 
         const handleMouseMove = (e) => {
             if (!this.isComponentResizing) return;
@@ -1244,38 +1138,36 @@ st
             const deltaX = e.clientX - startX;
             const deltaY = e.clientY - startY;
 
-            let newWidth = startWidth;
-            let newHeight = startHeight;
             let newLeft = startLeft;
             let newTop = startTop;
+            let newRight = startRight;
+            let newBottom = startBottom;
 
-            switch (position) {
-                case 'se':
-                    newWidth = Math.max(50, startWidth + deltaX);
-                    newHeight = Math.max(30, startHeight + deltaY);
-                    break;
-                case 'sw':
-                    newWidth = Math.max(50, startWidth - deltaX);
-                    newHeight = Math.max(30, startHeight + deltaY);
-                    newLeft = startLeft + deltaX;
-                    break;
-                case 'ne':
-                    newWidth = Math.max(50, startWidth + deltaX);
-                    newHeight = Math.max(30, startHeight - deltaY);
-                    newTop = startTop + deltaY;
-                    break;
-                case 'nw':
-                    newWidth = Math.max(50, startWidth - deltaX);
-                    newHeight = Math.max(30, startHeight - deltaY);
-                    newLeft = startLeft + deltaX;
-                    newTop = startTop + deltaY;
-                    break;
+            if (position.includes('e')) {
+                newRight = startRight + deltaX;
+                newRight = Math.max(startLeft + minW, Math.min(newRight, screenRect.width));
+            }
+            if (position.includes('w')) {
+                newLeft = startLeft + deltaX;
+                newLeft = Math.min(startRight - minW, Math.max(0, newLeft));
             }
 
-            this.selectedComponent.style.width = newWidth + 'px';
-            this.selectedComponent.style.height = newHeight + 'px';
-            this.selectedComponent.style.left = newLeft + 'px';
-            this.selectedComponent.style.top = newTop + 'px';
+            if (position.includes('s')) {
+                newBottom = startBottom + deltaY;
+                newBottom = Math.max(startTop + minH, Math.min(newBottom, screenRect.height));
+            }
+            if (position.includes('n')) {
+                newTop = startTop + deltaY;
+                newTop = Math.min(startBottom - minH, Math.max(0, newTop));
+            }
+
+            const newWidth = Math.round(newRight - newLeft);
+            const newHeight = Math.round(newBottom - newTop);
+
+            element.style.left = Math.round(newLeft) + 'px';
+            element.style.top = Math.round(newTop) + 'px';
+            element.style.width = Math.max(minW, newWidth) + 'px';
+            element.style.height = Math.max(minH, newHeight) + 'px';
 
             this.updatePropertyFormFromComponent();
         };
@@ -1284,6 +1176,8 @@ st
             this.isComponentResizing = false;
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
+            this.updateComponentData();
+            this.markUnsaved();
         };
 
         document.addEventListener('mousemove', handleMouseMove);
@@ -1293,7 +1187,10 @@ st
     updatePropertyFormFromComponent() {
         if (!this.selectedComponent) return;
 
-        const rect = this.selectedComponent.getBoundingClientRect();
+        const element = document.querySelector(`[data-component-id="${this.selectedComponent.id}"]`);
+        if (!element) return;
+
+        const rect = element.getBoundingClientRect();
         const screenRect = document.getElementById('screenArea').getBoundingClientRect();
 
         const x = rect.left - screenRect.left;
@@ -1301,7 +1198,6 @@ st
         const width = rect.width;
         const height = rect.height;
 
-        // Update form inputs
         const xInput = document.getElementById('componentX');
         const yInput = document.getElementById('componentY');
         const widthInput = document.getElementById('componentWidth');
@@ -1312,31 +1208,49 @@ st
         if (widthInput) widthInput.value = Math.round(width);
         if (heightInput) heightInput.value = Math.round(height);
 
-        // Update component data
         this.updateComponentData();
     }
 
     updateComponentData() {
         if (!this.selectedComponent) return;
 
-        const componentId = this.selectedComponent.dataset.componentId;
+        const componentId = this.selectedComponent.id;
         const component = this.components.find(c => c.id === componentId);
 
         if (component) {
-            const rect = this.selectedComponent.getBoundingClientRect();
-            const screenRect = document.getElementById('screenArea').getBoundingClientRect();
+            const element = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (element) {
+                const rect = element.getBoundingClientRect();
+                const screenRect = document.getElementById('screenArea').getBoundingClientRect();
 
-            component.x = Math.round(rect.left - screenRect.left);
-            component.y = Math.round(rect.top - screenRect.top);
-            component.width = Math.round(rect.width);
-            component.height = Math.round(rect.height);
+                component.x = Math.round(rect.left - screenRect.left);
+                component.y = Math.round(rect.top - screenRect.top);
+                component.width = Math.round(rect.width);
+                component.height = Math.round(rect.height);
+            }
         }
     }
 
-    // Override the existing addComponent method to add resize handles
+    syncComponentsFromDOM() {
+        const screen = document.getElementById('screenArea');
+        if (!screen) return;
+        const screenRect = screen.getBoundingClientRect();
+        const nodes = screen.querySelectorAll('[data-component-id]');
+        nodes.forEach(el => {
+            const id = el.getAttribute('data-component-id');
+            const model = this.components.find(c => c.id === id);
+            if (!model) return;
+            const r = el.getBoundingClientRect();
+            model.x = Math.round(r.left - screenRect.left);
+            model.y = Math.round(r.top - screenRect.top);
+            model.width = Math.round(r.width);
+            model.height = Math.round(r.height);
+        });
+    }
+
     addComponent(type, x, y, width = 100, height = 50) {
         const component = {
-            id: Date.now().toString(),
+            id: this.generateId(),
             type: type,
             x: x,
             y: y,
@@ -1346,22 +1260,22 @@ st
             placeholder: this.getDefaultPlaceholder(type),
             textColor: '#000000',
             checked: false,
-            imagePath: null
+            imagePath: null,
+            zIndex: this.components.length
         };
 
         this.components.push(component);
         this.renderComponent(component);
 
-        // Select the newly added component
         const componentElement = document.querySelector(`[data-component-id="${component.id}"]`);
         if (componentElement) {
-            this.selectComponent(componentElement);
+            this.selectComponent(component);
         }
 
+        this.markUnsaved();
         return component;
     }
 
-    // Override the existing renderComponent method to add resize handles
     renderComponent(component) {
         const mobileScreen = document.getElementById('screenArea');
         const componentElement = document.createElement('div');
@@ -1373,23 +1287,15 @@ st
         componentElement.style.width = component.width + 'px';
         componentElement.style.height = component.height + 'px';
         componentElement.style.color = component.textColor;
+        componentElement.style.zIndex = component.zIndex;
 
-        // Set content based on type
-        if (component.type === 'image' && component.imagePath) {
-            componentElement.style.backgroundImage = `url(${component.imagePath})`;
-            componentElement.style.backgroundSize = 'cover';
-            componentElement.style.backgroundPosition = 'center';
-        } else {
-            componentElement.textContent = component.text || this.getDefaultText(component.type);
-        }
+        this.setComponentContent(componentElement, component);
 
-        // Add event listeners
         componentElement.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.selectComponent(componentElement);
+            this.selectComponent(component);
         });
 
-        // Add drag functionality
         componentElement.addEventListener('mousedown', (e) => {
             if (e.target.classList.contains('component-resize-handle')) return;
             this.startComponentDrag(e, componentElement);
@@ -1401,28 +1307,35 @@ st
     startComponentDrag(e, component) {
         e.preventDefault();
         this.isComponentDragging = true;
+        const compId = component.dataset && component.dataset.componentId;
+        if (compId) {
+            const data = this.components.find(c => c.id === compId);
+            if (data) {
+                this.selectedComponent = data;
+            }
+        }
 
         const rect = component.getBoundingClientRect();
         const screenRect = document.getElementById('screenArea').getBoundingClientRect();
 
         this.dragOffset = {
-            x: e.clientX - rect.left + screenRect.left,
-            y: e.clientY - rect.top + screenRect.top
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
         };
 
         const handleMouseMove = (e) => {
             if (!this.isComponentDragging) return;
 
             const screenRect = document.getElementById('screenArea').getBoundingClientRect();
-            let newX = e.clientX - this.dragOffset.x;
-            let newY = e.clientY - this.dragOffset.y;
+            let newX = e.clientX - screenRect.left - this.dragOffset.x;
+            let newY = e.clientY - screenRect.top - this.dragOffset.y;
 
-            // Constrain to screen bounds
             newX = Math.max(0, Math.min(screenRect.width - component.offsetWidth, newX));
             newY = Math.max(0, Math.min(screenRect.height - component.offsetHeight, newY));
 
             component.style.left = newX + 'px';
             component.style.top = newY + 'px';
+            this.markUnsaved();
         };
 
         const handleMouseUp = () => {
@@ -1430,9 +1343,9 @@ st
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
 
-            // Update component data and property form
             this.updateComponentData();
             this.updatePropertyFormFromComponent();
+            this.markUnsaved();
         };
 
         document.addEventListener('mousemove', handleMouseMove);
@@ -1459,32 +1372,30 @@ st
         return defaults[type] || '';
     }
 
-    // Page Navigation Warning for unsaved changes
     setupPageNavigationWarning() {
         let hasUnsavedChanges = false;
+        this.hasUnsavedChanges = false;
+        this.suppressBeforeUnload = false;
 
-        // Track changes to components
         const trackChanges = () => {
             hasUnsavedChanges = true;
+            this.hasUnsavedChanges = true;
         };
 
-        // Reset changes flag when screen is saved
         const resetChanges = () => {
             hasUnsavedChanges = false;
+            this.hasUnsavedChanges = false;
         };
 
-        // Store original methods first
         this.originalAddComponent = this.addComponent;
         this.originalSaveScreen = this.saveScreen;
 
-        // Add change tracking to component modifications
         this.addComponent = function (type, x, y) {
             const component = this.originalAddComponent.call(this, type, x, y);
             trackChanges();
             return component;
         };
 
-        // Override save screen to reset changes flag
         this.saveScreen = async function () {
             const result = await this.originalSaveScreen();
             if (result) {
@@ -1493,30 +1404,55 @@ st
             return result;
         };
 
-        // Add beforeunload event listener
         window.addEventListener('beforeunload', (e) => {
-            if (hasUnsavedChanges) {
+            if ((hasUnsavedChanges || this.hasUnsavedChanges) && !this.suppressBeforeUnload) {
                 e.preventDefault();
                 e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
                 return e.returnValue;
             }
         });
 
-        // Track changes when components are modified
+        const backLink = document.querySelector('a[href="/"]');
+        const intercept = async (e) => {
+            if (!(hasUnsavedChanges || this.hasUnsavedChanges)) return;
+            e.preventDefault();
+            const result = await Swal.fire({
+                title: 'Leave this page?',
+                text: 'Your changes will be lost and cannot be recovered. Are you sure you want to leave this page?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Leave Page',
+                cancelButtonText: 'Stay',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            });
+            if (result.isConfirmed) {
+                this.suppressBeforeUnload = true;
+                window.location.href = '/';
+            }
+        };
+        if (backLink) {
+            backLink.addEventListener('click', intercept);
+        }
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest && e.target.closest('a[href="/"]');
+            if (link) {
+                intercept(e);
+            }
+        });
+
         const originalUpdateComponentProperty = this.updateComponentProperty;
         this.updateComponentProperty = function (property, value) {
             originalUpdateComponentProperty.call(this, property, value);
             trackChanges();
         };
 
-        // Track changes when components are deleted
         const originalDeleteSelectedComponent = this.deleteSelectedComponent;
         this.deleteSelectedComponent = function () {
             originalDeleteSelectedComponent.call(this);
             trackChanges();
         };
 
-        // Track changes when screen background is modified
         const originalUpdateScreenBackground = this.updateScreenBackground;
         this.updateScreenBackground = function () {
             originalUpdateScreenBackground.call(this);
@@ -1524,7 +1460,7 @@ st
         };
     }
 
-    // Logout Confirmation
+    // Logout Confirm
     setupLogoutConfirmation() {
         const logoutLink = document.querySelector('a[href="/logout"]');
         if (logoutLink) {
@@ -1543,6 +1479,7 @@ st
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // Submit logout form
+                        this.suppressBeforeUnload = true;
                         const form = document.createElement('form');
                         form.method = 'POST';
                         form.action = '/logout';

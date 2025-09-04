@@ -8,6 +8,7 @@
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Login - Mobile Screen Designer</title>
             <link rel="stylesheet" href="/css/style.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/parsley.js/2.9.2/parsley.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <style>
                 .auth-container {
@@ -97,15 +98,15 @@
 
 
 
-                <form class="auth-form" action="/login" method="post">
+                <form class="auth-form" action="/login" method="post" data-parsley-validate>
                     <div class="form-group">
                         <label for="username">Username:</label>
-                        <input type="text" id="username" name="username" required>
+                        <input type="text" id="username" name="username" required data-parsley-required="true" data-parsley-minlength="3" data-parsley-trigger="blur">
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required>
+                        <input type="password" id="password" name="password" required data-parsley-required="true" data-parsley-minlength="6" data-parsley-trigger="blur">
                     </div>
 
                     <button type="submit" class="btn btn-primary">Login</button>
